@@ -1,32 +1,122 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+# This file constrains how OpenSpec artifacts are generated for this project.
+# `context` and `rules` are instructions for the model, not content for the artifacts.
+# Change it only when a stable project fact changes, or when the same mistake shows up
+# across several changes. Decisions that belong to one slice live in that change's design.md.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+context: |
+  # Product
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  A Data Room: one authenticated owner, one Data Room, an arbitrarily deep tree of folders and
+  files inside it, shared read-only (public link or named grantee) and revocably. Built as a
+  take-home, graded in this order: (1) UX and functionality, (2) design and polish, (3) code
+  quality. "Don't include unimplemented features" is part of the grading.
+
+  # Spec source of truth
+
+  `docs/` is the plan. Cite its stable IDs (`FR-<AREA>-<nnn>`, `BR-<nnn>`) in every artifact.
+
+  - `docs/01-scope.md` — tiers (Core / Polish / Extra credit), what was cut, traceability to the brief
+  - `docs/02-requirements.md` — authority for requirements, rules and limits
+  - `docs/03-domain-and-api.md` — authority for field names, endpoints, error codes, storage,
+    deployment topology and the scaling answers
+  - `docs/04-ux.md` — screens, interactions, component inventory, state ownership
+  - `docs/05-build-order.md` — slices; one OpenSpec change is normally one slice
+
+  Retired IDs, never reused: FR-SRCH-030, FR-SRCH-040, FR-SRCH-050, BR-090 (semantic search, cut).
+
+  # Repository
+
+  pnpm + Turborepo. From the root: `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm typecheck`,
+  `pnpm lint`; scope with `--filter @dataroom/api` or `@dataroom/web`.
+
+  - `apps/api` — NestJS 11, routes under `/api` (`API_PREFIX` from the shared package), global
+    `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`), Jest. Planned: Prisma + Postgres,
+    Passport JWT, `@aws-sdk/client-s3`.
+  - `apps/web` — Vite 8 + React 19, Vitest. Planned: Tailwind v4 + shadcn/ui (copied into
+    `src/components/ui/`), TanStack Router + Query, Zustand, `XMLHttpRequest` for upload progress.
+  - `packages/shared` — `@dataroom/shared`, compiles to CJS so Nest can require it. Every type that
+    crosses the API/web boundary lives here and is never duplicated in an app.
+  - Blobs: one private S3-compatible bucket — MinIO via `docker compose` locally, Cloudflare R2 in
+    production, one code path.
+  - Deployed: web on Vercel, API on Railway (persistent process — uploads stream through Nest),
+    Postgres on Neon (pooled URL at runtime, `DIRECT_URL` for `prisma migrate deploy`).
+
+  # Domain model
+
+  `User` → `DataRoom` (one per user today; the model allows several) → `Node` rows. One table does
+  folders and files: a folder is a node with no blob, a file is a node with one. `Share` rows grant
+  read-only access to one node and its whole subtree. `dataRoomId` is the scope column and leads
+  every index.
+
+  # Invariants — do not break one without an explicit decision from the user
+
+  - BR-010 — every request resolves to one principal: owner (JWT) or share (token). Scope is checked
+    once per request against the Data Room. A node the principal has no claim on returns
+    `404 NOT_FOUND`, never `403`.
+  - BR-020 — names are unique per `(dataRoomId, parentId)`, case-insensitive; a conflict appends
+    ` (2)` before the extension and the response carries the name actually used. One shared helper —
+    never a second implementation for move, copy or upload.
+  - BR-030 — every delete confirms first and states the real recursive counts from
+    `GET /nodes/:id/stats`, never "and its contents".
+  - BR-040 — uploads are validated server-side on sniffed MIME type and size before any blob is
+    written. SVG is not in the allow list.
+  - BR-050 — every failure is visible; uploads retry twice on a network error or 5xx and never on a
+    4xx; a failed upload leaves no row and no orphan blob.
+  - BR-060 — blob first, row second, failed row write deletes the blob; subtree delete/move/copy run
+    in one transaction.
+  - BR-070 — handlers ask the principal for a capability (`read` / `write`), never for the header, the
+    token or the role name. `Share.role` exists and only holds `VIEWER` today.
+  - BR-100 — a slice is finished when it works on the deployed URL, not on localhost. Nothing ships
+    disabled or half-implemented: remove it from the UI instead.
+
+  # Conventions
+
+  - The server enforces. Hiding a button is not access control.
+  - One error envelope `{ code, message, details? }` from a global exception filter; codes come from
+    `docs/03-domain-and-api.md`.
+  - Listings are keyset-paginated on `(type, name, id)`, default 100 rows, and never show total counts.
+  - `BigInt` is converted to `number` once, in the serialisation layer.
+  - Tier discipline: a Core change never pulls in Polish or Extra-credit work. If it seems to need
+    to, say so in the proposal.
+  - Capability paths under `openspec/specs/` mirror the requirement areas in `docs/02`: `auth`,
+    `data-room`, `navigation`, `folders`, `files`, `viewing`, `sharing`, `search`, `versioning`,
+    `ui-shell`, and `platform/{persistence,http,authz,deployment,delivery,testing}`.
+
+rules:
+  proposal:
+    - Under 300 words.
+    - Name the slice number from docs/05-build-order.md and list the FR/BR IDs this change delivers.
+    - A Non-goals section is required, and it names the adjacent slices this change deliberately leaves alone.
+    - If the change needs a requirement in docs/02 to change, say so here rather than redefining it silently elsewhere.
+  specs:
+    - Delta only. Do not restate behavior already recorded in openspec/specs/.
+    - Every scenario title starts with the requirement ID it verifies, e.g. "FR-FLDR-030 delete states the blast radius".
+    - Scenarios describe externally observable behavior — HTTP status plus error code, or what the user sees — not implementation.
+    - Cover the failure path of every rule the change touches, not only the happy path.
+  design:
+    - Under 400 words plus code blocks.
+    - 'Self-contained. Copy the concrete field names, endpoint signatures, error codes, index names and env vars out of docs/03 into this file. "See docs/03" is a context miss: the apply step does not read docs/.'
+    - State which BR-* invariants the change touches and how it upholds each one.
+    - Name the one alternative that was rejected, and why.
+  tasks:
+    - At most 10 tasks.
+    - One task is one module, one component, or one migration, and is independently verifiable.
+    - 'Order: migration → API → shared types → UI → tests.'
+    - Include a test task whenever the change implements a BR-* rule.
+    - No task spans both apps unless it only threads a shared type through.
+    - 'Last task: update docs/ if the implementation diverged from the plan — drop the task if it did not.'
+
+operations:
+  apply:
+    guidance:
+      - Run `pnpm typecheck && pnpm lint && pnpm test` before reporting completion, and paste failures verbatim.
+      - Stay inside the change's capability. If the work needs a file outside it, pause and say so instead of widening the change.
+      - Put cross-boundary types in packages/shared; never duplicate a type in an app.
+      - Never leave a disabled or placeholder control in the UI (BR-100) — omit the feature instead.
+  archive:
+    guidance:
+      - Archive only once the change has been verified on the deployed URL (BR-100).
+      - Run the sync step first, so openspec/specs/ reflects what actually shipped.
+      - State which FR/BR IDs are now live in the summary.
