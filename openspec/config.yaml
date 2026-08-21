@@ -20,7 +20,7 @@ context: |
   - `docs/01-scope.md` — tiers (Core / Polish / Extra credit), what was cut, traceability to the brief
   - `docs/02-requirements.md` — authority for requirements, rules and limits
   - `docs/03-domain-and-api.md` — authority for field names, endpoints, error codes, storage,
-    deployment topology and the scaling answers
+    the environment contract and the scaling answers
   - `docs/04-ux.md` — screens, interactions, component inventory, state ownership
   - `docs/05-build-order.md` — slices; one OpenSpec change is normally one slice
 
@@ -38,10 +38,12 @@ context: |
     `src/components/ui/`), TanStack Router + Query, Zustand, `XMLHttpRequest` for upload progress.
   - `packages/shared` — `@dataroom/shared`, compiles to CJS so Nest can require it. Every type that
     crosses the API/web boundary lives here and is never duplicated in an app.
-  - Blobs: one private S3-compatible bucket — MinIO via `docker compose` locally, Cloudflare R2 in
-    production, one code path.
-  - Deployed: web on Vercel, API on Railway (persistent process — uploads stream through Nest),
-    Postgres on Neon (pooled URL at runtime, `DIRECT_URL` for `prisma migrate deploy`).
+  - Blobs: one private S3-compatible bucket — MinIO via `docker compose` locally, any S3-compatible
+    store elsewhere, one code path.
+  - Hosting: none is chosen, and none is named in the code. The app runs locally and is deployed by
+    whoever wants it, wherever they want it (see `docs/03` § Running it somewhere else). The only
+    constraint the code imposes: the API needs a persistent process, because uploads stream through
+    Nest. `DATABASE_URL` at runtime, `DIRECT_URL` for `prisma migrate deploy`.
 
   # Domain model
 
@@ -68,8 +70,9 @@ context: |
     in one transaction.
   - BR-070 — handlers ask the principal for a capability (`read` / `write`), never for the header, the
     token or the role name. `Share.role` exists and only holds `VIEWER` today.
-  - BR-100 — a slice is finished when it works on the deployed URL, not on localhost. Nothing ships
-    disabled or half-implemented: remove it from the UI instead.
+  - BR-100 — nothing ships disabled or half-implemented: remove it from the UI instead. And nothing
+    is wired to one machine — no host, port, origin or bucket name is hardcoded; each is an env var
+    with a local default, listed in `docs/03` § Configuration.
 
   # Conventions
 
@@ -82,7 +85,7 @@ context: |
     to, say so in the proposal.
   - Capability paths under `openspec/specs/` mirror the requirement areas in `docs/02`: `auth`,
     `data-room`, `navigation`, `folders`, `files`, `viewing`, `sharing`, `search`, `versioning`,
-    `ui-shell`, and `platform/{persistence,http,authz,deployment,delivery,testing}`.
+    `ui-shell`, and `platform/{persistence,http,authz,delivery,testing}`.
 
 rules:
   proposal:
@@ -117,6 +120,7 @@ operations:
       - Never leave a disabled or placeholder control in the UI (BR-100) — omit the feature instead.
   archive:
     guidance:
-      - Archive only once the change has been verified on the deployed URL (BR-100).
+      - Archive only once the change has been verified by hand in the running app, not merely by a
+        green test run (BR-100).
       - Run the sync step first, so openspec/specs/ reflects what actually shipped.
       - State which FR/BR IDs are now live in the summary.

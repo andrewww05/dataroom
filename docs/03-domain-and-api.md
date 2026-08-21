@@ -1,8 +1,8 @@
-# 03 — Domain, storage, API and deployment
+# 03 — Domain, storage, API and configuration
 
-This file owns field names, endpoints, error codes and hosting. Rules and limits live in
-[02-requirements.md](./02-requirements.md). The ERD, the scaling answers and the deployment
-topology here are lifted verbatim into the root README by FR-OPS-020, so they are written to be
+This file owns field names, endpoints, error codes and the environment contract. Rules and limits
+live in [02-requirements.md](./02-requirements.md). The ERD, the scaling answers and the hosting
+requirements here are lifted verbatim into the root README by FR-OPS-020, so they are written to be
 read by someone who has not read the rest of the spec.
 
 ## Model
@@ -64,6 +64,12 @@ erDiagram
 ```
 
 ### Prisma
+
+Prisma 7 keeps connection URLs out of `schema.prisma`: the datasource block carries only
+`provider = "postgresql"`. The CLI reads `DIRECT_URL` from `apps/api/prisma.config.ts`, and the
+runtime client is handed `DATABASE_URL` through the `@prisma/adapter-pg` driver adapter — there is
+no Rust query engine to configure. The env vars and their roles are unchanged from
+[Configuration](#configuration).
 
 ```prisma
 model User {
@@ -140,23 +146,28 @@ model Share {
 is the node in that room with `parentId IS NULL`, which the partial unique index below makes exactly
 one, and `GET /auth/me` resolves it in a single indexed lookup.
 
-Two constraints need hand-written SQL in the first migration, because Prisma cannot express either;
-the trigram index arrives later, with the search slice that needs it:
+Two constraints need hand-written SQL in the first migration, because Prisma can express neither a
+partial nor a functional unique index; the trigram index arrives later, with the search slice that
+needs it. Identifiers are quoted camelCase, because that is what Prisma emits without an `@map`:
 
 ```sql
 -- BR-020: names are unique per folder, case-insensitively.
-CREATE UNIQUE INDEX node_name_unique
-  ON "Node" (data_room_id, parent_id, lower(name)) WHERE parent_id IS NOT NULL;
+CREATE UNIQUE INDEX "node_name_unique"
+  ON "Node" ("dataRoomId", "parentId", lower("name")) WHERE "parentId" IS NOT NULL;
 
 -- One root per Data Room.
-CREATE UNIQUE INDEX node_single_root
-  ON "Node" (data_room_id) WHERE parent_id IS NULL;
+CREATE UNIQUE INDEX "node_single_root"
+  ON "Node" ("dataRoomId") WHERE "parentId" IS NULL;
 
--- FR-SRCH-010 (extra credit, its own migration in slice 14): substring search on name,
--- scoped by data_room_id at query time.
+-- FR-SRCH-010 (extra credit, its own migration in slice 13): substring search on name,
+-- scoped by "dataRoomId" at query time.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX node_name_trgm ON "Node" USING gin (name gin_trgm_ops);
+CREATE INDEX "node_name_trgm" ON "Node" USING gin ("name" gin_trgm_ops);
 ```
+
+A unique violation on either index surfaces from Prisma as `P2002` naming the *fields*, not the
+index — `("dataRoomId", "parentId", lower(name::text))` against `("dataRoomId")` — which is how the
+two are told apart when handling BR-020's auto-rename.
 
 `onDelete: Cascade` on the self-relation is what makes FR-FLDR-030 one statement: deleting a
 folder row deletes its whole subtree, and every `Share` on every node in it. The service collects
@@ -215,20 +226,23 @@ itself or appears in its own subtree, reject with `INVALID_MOVE`.
 
 ## Storage
 
-One private bucket (`dataroom`), the S3 API in both environments: **MinIO** in `docker compose`
-locally, **Cloudflare R2** in production. `@aws-sdk/client-s3` and every presigned URL are
-byte-identical between them; only `S3_ENDPOINT`, the credentials and `S3_FORCE_PATH_STYLE` differ,
-which is the whole reason for choosing an S3-compatible store over a proprietary blob API.
+One private bucket (`dataroom`), reached over the S3 API. Locally that is **MinIO** from
+`docker compose`; anywhere else it is whichever S3-compatible store the operator already has — AWS
+S3, Cloudflare R2, Backblaze B2, Spaces, or MinIO on a box. `@aws-sdk/client-s3` and every presigned
+URL are byte-identical across all of them; only `S3_ENDPOINT`, the credentials and
+`S3_FORCE_PATH_STYLE` change, which is the whole reason for choosing an S3-compatible store over a
+proprietary blob API. No vendor is named in the code.
 
 Objects are keyed `{dataRoomId}/{nodeId}` — the id is generated in the service with
 `crypto.randomUUID()` so the key is known before the row is inserted, which is what makes BR-060's
 blob-first ordering possible. With versioning (extra credit) the key gains a third segment.
 
 - **Upload** streams through the API (`FileInterceptor` → `PutObject`) so BR-040's validation runs
-  on real bytes before anything is stored. This is the decision that fixes the API's hosting: a
-  serverless function caps request bodies well below 100 MB, so the API runs on a persistent host
-  (see [Deployment](#deployment)). Presigned direct-to-bucket uploads are the change to make when
-  throughput matters more than synchronous validation, and they are also what makes 100 MB free.
+  on real bytes before anything is stored. This is the one decision that constrains where the API
+  can run: a serverless function caps request bodies well below 100 MB, so the API needs a
+  persistent process (see [Running it somewhere else](#running-it-somewhere-else)). Presigned
+  direct-to-bucket uploads are the change to make when throughput matters more than synchronous
+  validation, and they are also what makes 100 MB free.
 - **Download and preview** redirect to a presigned `GetObject` URL valid for 5 minutes —
   download with `response-content-disposition=attachment`, preview with `inline`. Bytes never
   pass through Nest. FR-VIEW-060 renders the inline URL in an `<iframe>`, which is a navigation
@@ -400,51 +414,55 @@ signed in as the wrong person, it is a flat `404` again.
 
 ## Configuration
 
-| Variable | Local default | Production | Used for |
+Every value that depends on the environment is here, with a local default that matches
+`docker compose`. Nothing in this column set is host-specific, which is what makes FR-OPS-010's
+"configuration, not a code change" true.
+
+| Variable | Local default | Elsewhere | Used for |
 | --- | --- | --- | --- |
-| `PORT` | `3000` | injected by the host | Nest listener |
-| `CORS_ORIGIN` | `http://localhost:5173` | the Vercel origin | Browser access to the API |
-| `DATABASE_URL` | `postgresql://dataroom:dataroom@localhost:5432/dataroom` | Neon **pooled** URL, `?sslmode=require` | Prisma at runtime |
-| `DIRECT_URL` | same as above | Neon **direct** URL | `prisma migrate deploy`, which cannot run through a pooler |
-| `JWT_SECRET` | — (required) | 32+ random bytes per environment | Token signing |
+| `PORT` | `3000` | whatever the host injects | Nest listener |
+| `CORS_ORIGIN` | `http://localhost:5173` | the origin serving the web app | Browser access to the API |
+| `DATABASE_URL` | `postgresql://dataroom:dataroom@localhost:5432/dataroom` | the Postgres URL, pooled if the provider offers one | Prisma at runtime, via the pg driver adapter |
+| `DIRECT_URL` | same as above | an **unpooled** Postgres URL | The Prisma CLI (`migrate deploy`), which cannot run through a pooler; read in `prisma.config.ts` |
+| `JWT_SECRET` | — (required) | 32+ random bytes, per environment | Token signing |
 | `JWT_EXPIRES_IN` | `7d` | `7d` | FR-AUTH-020 |
-| `S3_ENDPOINT` | `http://localhost:9000` | `https://<account>.r2.cloudflarestorage.com` | MinIO / R2 |
-| `S3_REGION` | `us-east-1` | `auto` | SDK signing |
+| `S3_ENDPOINT` | `http://localhost:9000` | the bucket's S3 endpoint, reachable **by the browser** | MinIO or any S3-compatible store |
+| `S3_REGION` | `us-east-1` | whatever the store wants (`auto` for some) | SDK signing |
 | `S3_BUCKET` | `dataroom` | `dataroom` | Blob bucket |
-| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | `minioadmin` / `minioadmin` | R2 token | Credentials |
-| `S3_FORCE_PATH_STYLE` | `true` | `false` | MinIO needs path style; R2 does not |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | `minioadmin` / `minioadmin` | the store's key pair | Credentials |
+| `S3_FORCE_PATH_STYLE` | `true` | `true` for MinIO, `false` for most hosted stores | Addressing style |
 | `MAX_FILE_BYTES` | `104857600` | `104857600` | BR-040 |
 | `MAX_VERSIONS` | `20` | `20` | BR-080 (extra credit) |
-| `PUBLIC_BASE_URL` | `http://localhost:5173` | the Vercel origin | Building `/s/{token}` links |
-| `SEED_DEMO_EMAIL` / `SEED_DEMO_PASSWORD` | unset | set once | FR-OPS-030's demo account |
+| `PUBLIC_BASE_URL` | `http://localhost:5173` | the origin serving the web app | Building `/s/{token}` links |
+| `SEED_DEMO_EMAIL` / `SEED_DEMO_PASSWORD` | unset | set once, if a demo account is wanted | FR-OPS-030's demo account |
 | `VITE_API_URL` (web) | unset — the Vite proxy handles `/api` | `https://<api-host>/api` | Where the browser sends requests |
 
 `docker-compose.yml` runs `postgres:17` and `minio/minio` and nothing else; the bucket is created on
 API boot if it is missing, so there is no manual setup step. Apps run on the host with `pnpm dev`.
 
-## Deployment
+## Running it somewhere else
 
-FR-OPS-010 is a requirement, not packaging, so it is built in slice 2 of
-[05](./05-build-order.md) — before there is anything to deploy — and every slice after it ships to
-the public URL (BR-100).
+**This plan deploys nothing and picks no host.** The deliverable is an app that runs locally from a
+clean clone (FR-OPS-010) and carries no vendor in its code, so whoever wants it on a server chooses
+where. What follows is the contract such a host has to satisfy — not a decision about which one.
 
-| Piece | Host | Why |
+| Piece | What it needs | Why |
 | --- | --- | --- |
-| `apps/web` | Vercel | A static Vite build; the brief recommends it. `VITE_API_URL` points at the API origin, so the dev-only `/api` proxy has no production counterpart to go wrong. |
-| `apps/api` | Railway | A persistent Node process. Uploads stream through Nest (BR-040 validates sniffed bytes), and a serverless function would cap the request body far below 100 MB — so the API cannot be a Vercel function without also giving up server-side validation. |
-| Postgres | Neon | Pooled URL at runtime, direct URL for `prisma migrate deploy` in the release command. |
-| Blobs | Cloudflare R2 | S3-compatible, so the MinIO code path is the production code path. Private bucket; every read is a presigned URL. |
+| `apps/web` | Anything that serves static files | It is a static Vite build. `VITE_API_URL` points at the API origin, so the dev-only `/api` proxy has no counterpart to go wrong. |
+| `apps/api` | A **persistent** Node process | Uploads stream through Nest so BR-040 can validate sniffed bytes. A serverless function caps the request body far below 100 MB, so the API cannot be one without giving up server-side validation. |
+| Postgres | Any Postgres 17 | `DATABASE_URL` at runtime, `DIRECT_URL` for `prisma migrate deploy` — the same split works whether or not a pooler is in front. |
+| Blobs | Any S3-compatible bucket, private | The MinIO code path is the only code path; every read is a presigned URL. |
 
-Four things that only break in production, all of them cheap to get right up front:
+Four things that break only once it is not all on one machine, all cheap to get right up front:
 
 - **The presigned host must be reachable by the browser.** URLs are signed against `S3_ENDPOINT`, so
-  it has to be the public R2 endpoint, not an internal hostname.
-- **CORS is one origin.** `CORS_ORIGIN` is the Vercel origin; Vercel preview deployments get
-  distinct hostnames, so either allow the preview pattern or test on the production origin.
+  it has to be the endpoint the browser can resolve, never a container-internal hostname.
+- **CORS is one origin.** `CORS_ORIGIN` is the origin serving the web app; if a host hands out a new
+  hostname per build, either allow that pattern or test on the stable one.
 - **Share links leak through `Referer`.** Send `Referrer-Policy: no-referrer` on `/s/*` so an
   outbound click from a shared view cannot hand the token to a third party.
-- **Migrations run on deploy**, not by hand: `prisma migrate deploy` as the release command, and the
-  health check is what tells you it worked.
+- **Migrations are a step, not a hope.** Run `prisma migrate deploy` before the new process serves
+  traffic, and let `/health` confirm it worked.
 
 ## How it scales
 

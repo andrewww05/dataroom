@@ -82,13 +82,13 @@ in tier order, so everything up to the Polish heading is required.
 
 | ID | Requirement |
 | --- | --- |
-| FR-OPS-010 | Frontend and backend are deployed and publicly reachable over HTTPS, and the deployed frontend talks to the deployed backend — not to a tunnel, not to localhost. Both URLs are in the README. A push to `main` redeploys both. |
-| FR-OPS-020 | The root README carries: the design decisions and their trade-offs, setup instructions that work from a clean clone, the ERD, the three "How it scales" answers ([03 § How it scales](./03-domain-and-api.md#how-it-scales)), a note on where and how AI was used, and the two hosted URLs. It replaces the current boilerplate README, including its `/api/documents` demo section. |
-| FR-OPS-030 | A seeded demo account (credentials in the README) opens onto a populated Data Room — a few nested folders, a handful of PDFs, one active public share — so the app can be assessed without signing up and uploading first. The seed is idempotent and never runs against a database that already has that user. |
+| FR-OPS-010 | The app runs end to end from a clean clone with no cloud account: `docker compose up -d` for Postgres and the blob store, `pnpm install`, one migration command, `pnpm dev`. Nothing in the code names a host or a vendor — every environment-dependent value is an env var with a local default ([03 § Configuration](./03-domain-and-api.md#configuration)), so putting it on a server is configuration, not a code change. |
+| FR-OPS-020 | The root README carries: the design decisions and their trade-offs, setup instructions that work from a clean clone, the ERD, the three "How it scales" answers ([03 § How it scales](./03-domain-and-api.md#how-it-scales)), a note on where and how AI was used, and what any host has to provide to run it ([03 § Running it somewhere else](./03-domain-and-api.md#running-it-somewhere-else)). It replaces the current boilerplate README, including its `/api/documents` demo section. |
+| FR-OPS-030 | A seeded demo account (credentials in the README) opens onto a populated Data Room — a few nested folders, a handful of PDFs, one active public share — so the app can be assessed without signing up and uploading first. The seed is idempotent and refuses to touch a database where that email already exists with different data. |
 
 # Polish
 
-Built only after Core is green on the deployed URL.
+Built only after Core is green and demonstrable end to end.
 
 | ID | Requirement |
 | --- | --- |
@@ -182,8 +182,11 @@ where v4 is v1's bytes. The cap is 20 versions per file; past that the oldest is
 and all, and the pane says which. `sizeBytes` on the node tracks the current version, while
 FR-ACCT-010's total sums every version.
 
-**BR-100 — Deployed or it does not count.** Slice 2 of [05](./05-build-order.md) deploys an empty
-app, and from then on a slice is finished when it works on the public URL, not when it works on
-`localhost`. Two consequences worth stating: config that only exists in a local `.env` is a bug, and
-a feature that cannot be finished is removed from the UI rather than shipped disabled — the brief
-asks for no unimplemented features, and a greyed-out menu entry is one.
+**BR-100 — Nothing ships disabled, and nothing is wired to one machine.** A slice is finished when
+it works end to end in the running app, not when the code merely compiles. Two consequences worth
+stating. First, a feature that cannot be finished is **removed** from the UI rather than shipped
+greyed out — the brief asks for no unimplemented features, and a disabled menu entry is one.
+Second, no host, port, origin or bucket name is hardcoded: every one of them is an env var with a
+local default, so the same build runs on a laptop and on a server without an edit. Where the app is
+eventually hosted is deliberately not this plan's decision — see
+[03 § Running it somewhere else](./03-domain-and-api.md#running-it-somewhere-else).
