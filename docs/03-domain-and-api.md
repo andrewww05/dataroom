@@ -255,7 +255,9 @@ blob-first ordering possible. With versioning (extra credit) the key gains a thi
 
 Everything under `/api` (the `API_PREFIX` in `packages/shared`). All routes require
 `Authorization: Bearer <jwt>` or `Authorization: Share <token>` except `/auth/signup`,
-`/auth/login`, `/shares/resolve` and `/health`. **Tier** marks what is Core.
+`/auth/login`, `/shares/resolve` and `/health`. That is enforced by one global guard with a
+`@Public()` escape, so a route added without an annotation is closed rather than open. **Tier**
+marks what is Core.
 
 | Method | Path | Body / query | Returns | Tier |
 | --- | --- | --- | --- | --- |
@@ -324,7 +326,10 @@ export interface FsNode {
   updatedAt: string;
 }
 
+export interface AuthUser { id: string; email: string }
 export interface DataRoom { id: string; name: string; rootId: string }
+export interface AuthResponse { token: string; user: AuthUser; dataRoom: DataRoom }
+export interface ApiError { code: string; message: string; details?: Record<string, string[]> }
 export interface Breadcrumb { id: string; name: string }
 export interface NodeStats { folders: number; files: number; bytes: number }
 export interface Page<T> { items: T[]; nextCursor: string | null }
@@ -404,6 +409,11 @@ The `code` is what the UI switches on; the `message` is what the toast shows.
 | `STORAGE_UNAVAILABLE` | 502 | The bucket refused or timed out — the client may retry (BR-050) |
 | `READ_ONLY` | 403 | A share principal called a mutating route (BR-070) |
 | `SIGN_IN_REQUIRED` | 401 | A `RESTRICTED` link opened by nobody — see below |
+| `INTERNAL` | 500 | Nothing above matched. Generic message, no stack trace, SQL, path or library name in the body; the cause and its stack go to the log instead |
+
+A code exists once a route can produce it, so the table above is the whole set and each slice adds
+its own rows to the filter (BR-100). `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `EMAIL_TAKEN`,
+`VALIDATION_FAILED`, `NOT_FOUND` and `INTERNAL` are live today.
 
 Name collisions produce no error: BR-020 renames and reports the name used.
 
@@ -424,7 +434,7 @@ Every value that depends on the environment is here, with a local default that m
 | `CORS_ORIGIN` | `http://localhost:5173` | the origin serving the web app | Browser access to the API |
 | `DATABASE_URL` | `postgresql://dataroom:dataroom@localhost:5432/dataroom` | the Postgres URL, pooled if the provider offers one | Prisma at runtime, via the pg driver adapter |
 | `DIRECT_URL` | same as above | an **unpooled** Postgres URL | The Prisma CLI (`migrate deploy`), which cannot run through a pooler; read in `prisma.config.ts` |
-| `JWT_SECRET` | — (required) | 32+ random bytes, per environment | Token signing |
+| `JWT_SECRET` | `dev-only-not-a-secret` in `.env.example`, **no default in code** | 32+ random bytes, per environment | Token signing. A process without it refuses to start (BR-100) |
 | `JWT_EXPIRES_IN` | `7d` | `7d` | FR-AUTH-020 |
 | `S3_ENDPOINT` | `http://localhost:9000` | the bucket's S3 endpoint, reachable **by the browser** | MinIO or any S3-compatible store |
 | `S3_REGION` | `us-east-1` | whatever the store wants (`auto` for some) | SDK signing |
@@ -439,6 +449,11 @@ Every value that depends on the environment is here, with a local default that m
 
 `docker-compose.yml` runs `postgres:17` and `minio/minio` and nothing else; the bucket is created on
 API boot if it is missing, so there is no manual setup step. Apps run on the host with `pnpm dev`.
+
+One dependency needs a native build: `argon2`, which pnpm would otherwise skip silently, leaving an
+import that fails at boot. It is listed in `onlyBuiltDependencies` in `pnpm-workspace.yaml` so
+`pnpm install` compiles it from a clean clone. `@node-rs/argon2` is the prebuilt drop-in if a
+platform ever refuses to build it.
 
 ## Running it somewhere else
 

@@ -6,13 +6,30 @@
  * connection variable aborts boot here rather than surfacing as a 500 on the first request.
  */
 
-/** Variables without a sensible default — boot fails when one is missing. */
-const REQUIRED = ['DATABASE_URL', 'S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'];
+/**
+ * Variables without a sensible default — boot fails when one is missing.
+ *
+ * `JWT_SECRET` is here rather than defaulted on purpose (BR-100): a deployment that forgets it
+ * would otherwise sign tokens with a value published in this repository, and anyone could forge one.
+ */
+const REQUIRED = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+  'S3_ENDPOINT',
+  'S3_BUCKET',
+  'S3_ACCESS_KEY',
+  'S3_SECRET_KEY',
+];
 
 export interface Env {
   port: number;
   corsOrigins: string[];
   databaseUrl: string;
+  jwt: {
+    secret: string;
+    /** Any `jsonwebtoken` lifetime — `7d` by default (FR-AUTH-020). */
+    expiresIn: string;
+  };
   s3: {
     endpoint: string;
     region: string;
@@ -52,6 +69,10 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): Env {
     port: Number(source.PORT ?? 3000),
     corsOrigins: (source.CORS_ORIGIN ?? 'http://localhost:5173').split(',').map((o) => o.trim()),
     databaseUrl: source.DATABASE_URL as string,
+    jwt: {
+      secret: source.JWT_SECRET as string,
+      expiresIn: source.JWT_EXPIRES_IN ?? '7d',
+    },
     s3: {
       endpoint: source.S3_ENDPOINT as string,
       region: source.S3_REGION ?? 'us-east-1',

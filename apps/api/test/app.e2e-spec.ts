@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
+import { configureApp } from '../src/bootstrap';
 
 describe('App (e2e)', () => {
   let app: INestApplication;
@@ -12,7 +13,8 @@ describe('App (e2e)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
 
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix(API_PREFIX);
+    // The same prefix and pipe `main.ts` applies, from the one place that applies them.
+    configureApp(app);
     await app.init();
   });
 

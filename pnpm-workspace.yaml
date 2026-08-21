@@ -3,6 +3,8 @@ packages:
   - 'packages/*'
 
 onlyBuiltDependencies:
+  # argon2 compiles a native addon; without this pnpm skips its build script and the import fails.
+  - argon2
   - '@nestjs/core'
   - '@swc/core'
   - esbuild
