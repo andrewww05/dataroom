@@ -4,7 +4,15 @@ import tseslint from 'typescript-eslint';
 
 /** Paths no package should ever lint. */
 export const ignores = {
-  ignores: ['**/dist/**', '**/build/**', '**/coverage/**', '**/.turbo/**', '**/node_modules/**'],
+  ignores: [
+    '**/dist/**',
+    '**/build/**',
+    '**/coverage/**',
+    '**/.turbo/**',
+    '**/node_modules/**',
+    // Prisma client output — generated on install, never hand-edited.
+    '**/src/generated/**',
+  ],
 };
 
 /** Shared TypeScript baseline every package in the workspace extends. */

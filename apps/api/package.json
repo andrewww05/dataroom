@@ -12,16 +12,24 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "postinstall": "prisma generate",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo src/generated"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1115.0",
     "@dataroom/shared": "workspace:*",
     "@nestjs/common": "11.2.1",
     "@nestjs/config": "4.0.4",
     "@nestjs/core": "11.2.1",
     "@nestjs/platform-express": "11.2.1",
+    "@prisma/adapter-pg": "7.9.1",
+    "@prisma/client": "7.9.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
+    "pg": "8.23.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },
@@ -33,9 +41,11 @@
     "@types/jest": "30.0.0",
     "@types/node": "26.2.0",
     "@types/supertest": "7.2.1",
+    "dotenv": "17.4.2",
     "eslint": "10.8.1",
     "globals": "17.11.0",
     "jest": "30.4.2",
+    "prisma": "7.9.1",
     "supertest": "7.2.2",
     "ts-jest": "29.4.12",
     "typescript": "5.9.3"

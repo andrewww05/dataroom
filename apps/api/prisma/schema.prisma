@@ -1,0 +1,98 @@
+// Data Room domain model. See openspec/changes/add-local-infra-and-schema/design.md and
+// docs/03-domain-and-api.md § Model.
+//
+// One table does folders and files: a folder is a Node with no blob, a file is a Node with one.
+// `dataRoomId` is the scope column and leads every index.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+// Prisma 7 keeps connection URLs out of the schema: the CLI reads DIRECT_URL from
+// prisma.config.ts, and the runtime client is handed DATABASE_URL through a driver adapter.
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique // lowercased on write
+  passwordHash String // argon2
+  createdAt    DateTime   @default(now())
+  dataRooms    DataRoom[]
+}
+
+model DataRoom {
+  id        String   @id @default(uuid())
+  ownerId   String
+  name      String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  nodes  Node[]
+  shares Share[]
+
+  @@index([ownerId])
+}
+
+// Declared folders-first on purpose: Postgres sorts enums by declaration order, so
+// `ORDER BY type` groups folders ahead of files without the query naming either value.
+enum NodeType {
+  FOLDER
+  FILE
+}
+
+model Node {
+  id         String   @id @default(uuid())
+  dataRoomId String
+  parentId   String? // null on the room's root node only
+  type       NodeType
+  name       String   @db.VarChar(255)
+
+  sizeBytes  BigInt? // files only
+  mimeType   String? // files only, sniffed server-side
+  storageKey String? // files only, the S3 object key
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dataRoom DataRoom @relation(fields: [dataRoomId], references: [id], onDelete: Cascade)
+  parent   Node?    @relation("children", fields: [parentId], references: [id], onDelete: Cascade)
+  children Node[]   @relation("children")
+  shares   Share[]
+
+  // The listing index — covers the sort order and the keyset cursor, including its tiebreak.
+  @@index([dataRoomId, parentId, type, name, id])
+}
+
+enum ShareMode {
+  PUBLIC
+  RESTRICTED
+}
+
+// EDITOR is unreachable today; see BR-070. It ships in the first migration so a second role
+// is a capability-map entry rather than a schema change.
+enum ShareRole {
+  VIEWER
+  EDITOR
+}
+
+model Share {
+  id           String    @id @default(uuid())
+  nodeId       String
+  dataRoomId   String // denormalised, so scope checks need no join
+  token        String    @unique // 32 random bytes, base64url
+  mode         ShareMode
+  role         ShareRole @default(VIEWER)
+  granteeEmail String? // set iff mode = RESTRICTED, stored lowercased
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  node     Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  dataRoom DataRoom @relation(fields: [dataRoomId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId])
+  @@index([granteeEmail]) // FR-SHARE-080's "Shared with me"
+}
