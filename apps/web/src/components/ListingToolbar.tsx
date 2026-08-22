@@ -6,7 +6,7 @@ import { useRef } from 'react';
 interface ListingToolbarProps {
   selectedNodes?: FsNode[];
   onCreateFolder: () => void;
-  onUploadFiles: (files: FileList) => void;
+  onUploadFiles: (files: FileList | File[]) => void;
   onRename: (node: FsNode) => void;
   onDelete: (node: FsNode) => void;
 }
@@ -23,7 +23,8 @@ export function ListingToolbar({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onUploadFiles(e.target.files);
+      const filesArray = Array.from(e.target.files);
+      onUploadFiles(filesArray);
       // Reset input so the same files can be uploaded again if needed
       e.target.value = '';
     }

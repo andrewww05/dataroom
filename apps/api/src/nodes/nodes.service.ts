@@ -1,7 +1,7 @@
-import type { Breadcrumb, FsNode, NodeStats, NodeType, Page } from '@dataroom/shared';
+import type { Breadcrumb, FsNode, NodeStats, NodeType, Page, Share } from '@dataroom/shared';
 import { Injectable, Logger } from '@nestjs/common';
 
-import type { Principal } from '../auth/principal';
+import { assertCapability, type Principal } from '../auth/principal';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { decodeCursor, encodeCursor } from './cursor';
@@ -10,8 +10,10 @@ import { NodeScopeService } from './node-scope.service';
 import { toFsNode, toNodeStats, type FsNodeRow, type NodeStatsRow } from './node.serializer';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { RenameNodeDto } from './dto/rename-node.dto';
+import { MoveNodesDto } from './dto/move-nodes.dto';
 import { resolveUniqueName } from './name.helper';
 import { StorageService } from '../storage/storage.service';
+import { InvalidMoveException } from '../http/api.exception';
 
 /** One row of the `/path` walk. `depth` counts up towards the root; the root has the highest. */
 interface AncestorRow {
@@ -79,6 +81,7 @@ export class NodesService {
   }
 
   async createFolder(principal: Principal, dto: CreateFolderDto): Promise<FsNode> {
+    assertCapability(principal, 'write');
     const parent = await this.scope.resolve(principal, dto.parentId);
 
     const node = await this.prisma.$transaction(async (tx) => {
@@ -101,8 +104,8 @@ export class NodesService {
   }
 
   async renameNode(principal: Principal, id: string, dto: RenameNodeDto): Promise<FsNode> {
+    assertCapability(principal, 'write');
     const existing = await this.scope.resolve(principal, id);
-    // TODO: assert 'write' capability on principal when share roles are implemented
 
     const node = await this.prisma.$transaction(async (tx) => {
       const resolvedName = await resolveUniqueName(
@@ -125,9 +128,58 @@ export class NodesService {
     });
   }
 
+  async moveNodes(principal: Principal, dto: MoveNodesDto): Promise<FsNode[]> {
+    assertCapability(principal, 'write');
+    const target = await this.scope.resolve(principal, dto.targetId);
+    if (target.type !== 'FOLDER') {
+      throw new InvalidMoveException();
+    }
+
+    // Verify all nodes exist and are in the same scope
+    const existingNodes = await Promise.all(
+      dto.ids.map((id) => this.scope.resolve(principal, id)),
+    );
+
+    // Cycle check: target path cannot contain any of the moving nodes
+    const targetPath = await this.path(principal, target.id);
+    const targetPathIds = new Set(targetPath.map((p) => p.id));
+    for (const id of dto.ids) {
+      if (targetPathIds.has(id)) {
+        throw new InvalidMoveException();
+      }
+    }
+
+    const movedNodes: FsNodeRow[] = [];
+    
+    await this.prisma.$transaction(async (tx) => {
+      for (const existing of existingNodes) {
+        const resolvedName = await resolveUniqueName(
+          tx,
+          target.dataRoomId,
+          target.id,
+          existing.name,
+          existing.parentId === target.id ? existing.id : undefined,
+        );
+        
+        const updated = await tx.node.update({
+          where: { id: existing.id },
+          data: { parentId: target.id, name: resolvedName },
+        });
+        
+        movedNodes.push(updated);
+      }
+    });
+
+    return movedNodes.map(n => toFsNode({
+      ...n,
+      sizeBytes: n.sizeBytes,
+      mimeType: n.mimeType,
+    } as FsNodeRow));
+  }
+
   async deleteNode(principal: Principal, id: string): Promise<void> {
+    assertCapability(principal, 'write');
     const existing = await this.scope.resolve(principal, id);
-    // TODO: assert 'write' capability on principal when share roles are implemented
 
     const keys = await this.prisma.$queryRaw<{ storageKey: string }[]>`
       WITH RECURSIVE subtree AS (
@@ -251,5 +303,24 @@ export class NodesService {
         FROM subtree`;
 
     return toNodeStats(row);
+  }
+
+  async listShares(principal: Principal, id: string): Promise<Share[]> {
+    const node = await this.scope.resolve(principal, id);
+    const shares = await this.prisma.share.findMany({
+      where: { nodeId: node.id },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return shares.map(share => ({
+      id: share.id,
+      nodeId: share.nodeId,
+      token: share.token,
+      mode: share.mode,
+      role: share.role,
+      granteeEmail: share.granteeEmail,
+      expiresAt: share.expiresAt?.toISOString() || null,
+      createdAt: share.createdAt.toISOString(),
+    }));
   }
 }

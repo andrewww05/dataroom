@@ -73,24 +73,43 @@ export function useUploadFiles() {
 
   return useMutation({
     mutationFn: async ({ parentId, files }: { parentId: string; files: FileList | File[] }) => {
+      // Import here to avoid circular dependency if any, or we can just import at the top
+      // Wait, let's just import it at the top of the file in another step
+      const { useUploads } = await import('./useUploads');
+      const { addUploads, updateStatus, setModalOpen } = useUploads.getState();
+
       const fileArray = Array.from(files);
-      for (const file of fileArray) {
+      const newUploads = fileArray.map((file) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        parentId,
+        status: 'uploading' as const,
+      }));
+
+      addUploads(newUploads);
+      setModalOpen(true);
+
+      for (const upload of newUploads) {
         const formData = new FormData();
         formData.append('parentId', parentId);
-        formData.append('file', file);
+        formData.append('file', upload.file);
 
-        await fetchClient<FsNode>('/files', {
-          method: 'POST',
-          body: formData as unknown as string,
-        });
+        try {
+          await fetchClient<FsNode>('/files', {
+            method: 'POST',
+            body: formData as unknown as string,
+          });
+          updateStatus(upload.id, 'success');
+        } catch (error: any) {
+          updateStatus(upload.id, 'error', error.message || 'Upload failed');
+        }
       }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', variables.parentId, 'children'] });
-      toast.success(`Uploaded ${variables.files.length} file(s).`);
     },
     onError: (error: Error) => {
-      toast.error(`Upload failed: ${error.message}`);
+      toast.error(`Upload batch failed: ${error.message}`);
     },
   });
 }

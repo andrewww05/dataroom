@@ -12,7 +12,9 @@ export const ErrorCode = {
   NOT_FOUND: 'NOT_FOUND',
   INVALID_NAME: 'INVALID_NAME',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
+  INVALID_MOVE: 'INVALID_MOVE',
   INTERNAL: 'INTERNAL',
+  READ_ONLY: 'READ_ONLY',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   UNSUPPORTED_TYPE: 'UNSUPPORTED_TYPE',
   STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
@@ -101,6 +103,12 @@ export class InvalidNameException extends ApiException {
   }
 }
 
+export class InvalidMoveException extends ApiException {
+  constructor() {
+    super(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_MOVE, 'That move is not allowed.');
+  }
+}
+
 export class FileTooLargeException extends ApiException {
   constructor() {
     super(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCode.FILE_TOO_LARGE, 'That file is too large.');
@@ -124,5 +132,11 @@ export class StorageUnavailableException extends ApiException {
       ErrorCode.STORAGE_UNAVAILABLE,
       'The storage service is temporarily unavailable.',
     );
+  }
+}
+
+export class ReadOnlyException extends ApiException {
+  constructor() {
+    super(HttpStatus.FORBIDDEN, ErrorCode.READ_ONLY, 'That action requires edit access.');
   }
 }

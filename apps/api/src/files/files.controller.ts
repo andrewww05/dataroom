@@ -14,7 +14,7 @@ import * as multer from 'multer';
 import { FilesService } from './files.service';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
-import { Principal } from '../auth/principal';
+import { assertCapability, Principal } from '../auth/principal';
 import { UnsupportedTypeException, ValidationFailedException } from '../http/api.exception';
 import { sniffMimeType } from './mime.sniffer';
 import { UPLOAD_ALLOWED_MIME_TYPES } from '@dataroom/shared';
@@ -37,6 +37,8 @@ export class FilesController {
     @Body() body: UploadFileDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    assertCapability(principal, 'write');
+
     if (!file) {
       throw new ValidationFailedException({ file: ['A file is required'] });
     }

@@ -1,5 +1,6 @@
 import type { AuthResponse, AuthUser, DataRoom } from '@dataroom/shared';
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { UnauthenticatedException } from '../http/api.exception';
 
 import { AuthService } from './auth.service';
 import { CurrentPrincipal } from './current-principal.decorator';
@@ -30,6 +31,9 @@ export class AuthController {
   /** The caller, their room and its root in one call, so the shell needs no second request. */
   @Get('me')
   me(@CurrentPrincipal() principal: Principal): Promise<AuthUser & { dataRoom: DataRoom }> {
+    if (principal.kind !== 'owner') {
+      throw new UnauthenticatedException();
+    }
     return this.auth.me(principal);
   }
 }

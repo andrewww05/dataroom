@@ -33,25 +33,47 @@ export class NodeScopeService {
   constructor(private readonly prisma: PrismaService) {}
 
   async resolve(principal: Principal, id: string): Promise<ScopedNode> {
-    const node = await this.prisma.node.findFirst({
-      // The join is the check. Asking for the row first and comparing owners afterwards would read
-      // a row the caller has no claim on, and one day forget to compare.
-      where: { id, dataRoom: { ownerId: principal.userId } },
-      select: {
-        ...FS_NODE_SELECT,
-        storageKey: true,
-        dataRoomId: true,
-        dataRoom: { select: { name: true } },
-      },
-    });
+    if (principal.kind === 'owner') {
+      const node = await this.prisma.node.findFirst({
+        where: { id, dataRoom: { ownerId: principal.userId } },
+        select: {
+          ...FS_NODE_SELECT,
+          storageKey: true,
+          dataRoomId: true,
+          dataRoom: { select: { name: true } },
+        },
+      });
 
-    // A foreign node, an id no row has, and an id that cannot name a node at all are the same
-    // answer: `404 NOT_FOUND` with no argument to vary, so the bodies are byte-identical and none
-    // of them confirms a row exists (FR-ROOM-030). Never `403` — that would confirm it.
-    if (!node) throw new NotFoundException();
+      if (!node) throw new NotFoundException();
 
-    const { dataRoom, ...row } = node;
+      const { dataRoom, ...row } = node;
+      return { ...row, dataRoomName: dataRoom.name };
+    } else {
+      const node = await this.prisma.node.findFirst({
+        where: { id, dataRoomId: principal.dataRoomId },
+        select: {
+          ...FS_NODE_SELECT,
+          storageKey: true,
+          dataRoomId: true,
+          dataRoom: { select: { name: true } },
+        },
+      });
 
-    return { ...row, dataRoomName: dataRoom.name };
+      if (!node) throw new NotFoundException();
+
+      const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+        WITH RECURSIVE ancestors AS (
+          SELECT "id", "parentId" FROM "Node" WHERE "id" = ${id} AND "dataRoomId" = ${principal.dataRoomId}
+          UNION ALL
+          SELECT n."id", n."parentId" FROM "Node" n JOIN ancestors a ON n."id" = a."parentId"
+           WHERE n."dataRoomId" = ${principal.dataRoomId}
+        )
+        SELECT "id" FROM ancestors WHERE "id" = ${principal.rootNodeId}`;
+
+      if (rows.length === 0) throw new NotFoundException();
+
+      const { dataRoom, ...row } = node;
+      return { ...row, dataRoomName: dataRoom.name };
+    }
   }
 }

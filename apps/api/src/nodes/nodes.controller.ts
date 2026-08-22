@@ -1,4 +1,4 @@
-import type { Breadcrumb, FsNode, NodeStats, Page } from '@dataroom/shared';
+import type { Breadcrumb, FsNode, Page } from '@dataroom/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
@@ -6,6 +6,7 @@ import type { Principal } from '../auth/principal';
 import { ListChildrenQuery } from './dto/list-children.query';
 import { NodesService } from './nodes.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
+import { MoveNodesDto } from './dto/move-nodes.dto';
 import { RenameNodeDto } from './dto/rename-node.dto';
 
 /**
@@ -42,6 +43,14 @@ export class NodesController {
     return this.nodes.renameNode(principal, id, dto);
   }
 
+  @Post('move')
+  moveNodes(
+    @CurrentPrincipal() principal: Principal,
+    @Body() dto: MoveNodesDto,
+  ): Promise<FsNode[]> {
+    return this.nodes.moveNodes(principal, dto);
+  }
+
   @Delete(':id')
   @HttpCode(204)
   deleteNode(@CurrentPrincipal() principal: Principal, @Param('id') id: string): Promise<void> {
@@ -63,7 +72,12 @@ export class NodesController {
   }
 
   @Get(':id/stats')
-  stats(@CurrentPrincipal() principal: Principal, @Param('id') id: string): Promise<NodeStats> {
+  getNodeStats(@CurrentPrincipal() principal: Principal, @Param('id') id: string) {
     return this.nodes.stats(principal, id);
+  }
+
+  @Get(':id/shares')
+  getShares(@CurrentPrincipal() principal: Principal, @Param('id') id: string) {
+    return this.nodes.listShares(principal, id);
   }
 }

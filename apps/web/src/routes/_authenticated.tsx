@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, Folder, Home } from 'lucide-react';
 import { DetailsPane } from '@/components/DetailsPane';
+import { UploadProgressModal } from '@/components/UploadProgressModal';
 
 function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
@@ -126,6 +127,7 @@ function AuthenticatedLayout() {
       </main>
 
       <DetailsPane />
+      <UploadProgressModal />
     </div>
   );
 }

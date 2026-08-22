@@ -12,6 +12,7 @@ import { NodesModule } from './nodes/nodes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 import { FilesModule } from './files/files.module';
+import { SharesModule } from './shares/shares.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FilesModule } from './files/files.module';
     HealthModule,
     DocumentsModule,
     FilesModule,
+    SharesModule,
   ],
   providers: [
     // One filter for every route, including the ones later slices add (BR-050).
