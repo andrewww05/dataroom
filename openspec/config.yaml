@@ -87,6 +87,28 @@ context: |
     `data-room`, `navigation`, `folders`, `files`, `viewing`, `sharing`, `search`, `versioning`,
     `ui-shell`, and `platform/{persistence,http,authz,delivery,testing}`.
 
+  # Validation scripts — mandatory, one per change
+
+  Every change ships `scripts/validate/<change-name>.sh` and is not complete until it exits 0.
+  Jest and Vitest prove the code in isolation; this script proves the change against the app that is
+  actually running — real Postgres, real MinIO, real HTTP — which is what the archive gate means by
+  "verified by hand". Writing it is a task in `tasks.md`, not an afterthought. Its contract:
+
+  - Bash, `set -euo pipefail`, executable, no required arguments.
+  - Hosts come from the environment with a local default — `API_BASE_URL`
+    (`http://localhost:3000/api`), `WEB_BASE_URL` (`http://localhost:5173`) — never hardcoded
+    (BR-100). An unreachable API prints the URL tried and exits non-zero, never skips (BR-050).
+  - It creates the accounts, folders and files it needs through the public API and deletes them at
+    the end, so two consecutive runs both pass and it never leans on another script's leftovers.
+  - One assertion per scenario, each line naming the `FR-*`/`BR-*` ID it proves and pass/fail. A
+    failure prints the request plus expected versus actual status and error code, then exits
+    non-zero on the spot.
+  - Failure paths are the point: assert the `404`/`409`/`413`/`415` the change introduces, not only
+    the happy path.
+  - It ends by printing the manual checklist for what only a browser can show (focus, drag-drop,
+    optimistic UI), so hand-verification before archive is a list, not a memory exercise.
+  - Dropping the script needs an explicit decision from the user, recorded in `design.md`.
+
 rules:
   proposal:
     - Under 300 words.
@@ -103,24 +125,31 @@ rules:
     - 'Self-contained. Copy the concrete field names, endpoint signatures, error codes, index names and env vars out of docs/03 into this file. "See docs/03" is a context miss: the apply step does not read docs/.'
     - State which BR-* invariants the change touches and how it upholds each one.
     - Name the one alternative that was rejected, and why.
+    - 'List the FR/BR IDs the validation script proves at runtime, and the ones it cannot — those become the manual checklist it prints.'
   tasks:
     - At most 10 tasks.
     - One task is one module, one component, or one migration, and is independently verifiable.
-    - 'Order: migration → API → shared types → UI → tests.'
+    - 'Order: migration → API → shared types → UI → tests → validation script.'
     - Include a test task whenever the change implements a BR-* rule.
     - No task spans both apps unless it only threads a shared type through.
+    - 'A validation-script task is mandatory: write scripts/validate/<change-name>.sh to the contract in the project context, name the FR/BR IDs it asserts, and verify it exits 0 against the running app.'
     - 'Last task: update docs/ if the implementation diverged from the plan — drop the task if it did not.'
 
 operations:
   apply:
     guidance:
       - Run `pnpm typecheck && pnpm lint && pnpm test` before reporting completion, and paste failures verbatim.
+      - Run the change's `scripts/validate/<change-name>.sh` against the running stack before reporting completion; a non-zero exit is an incomplete change, not a flaky script.
+      - Never mark the validation-script task done with a script that skips, warns or exits 0 on an unreachable API — it must actually assert.
       - Stay inside the change's capability. If the work needs a file outside it, pause and say so instead of widening the change.
       - Put cross-boundary types in packages/shared; never duplicate a type in an app.
       - Never leave a disabled or placeholder control in the UI (BR-100) — omit the feature instead.
   archive:
     guidance:
       - Archive only once the change has been verified by hand in the running app, not merely by a
-        green test run (BR-100).
+        green test run (BR-100). `scripts/validate/<change-name>.sh` must have exited 0 on that
+        same run, and its printed manual checklist must have been walked in the browser.
+      - The validation script stays in `scripts/validate/` after archive — it is the regression
+        check for the slice, so a later change that breaks this one fails an existing script.
       - Run the sync step first, so openspec/specs/ reflects what actually shipped.
       - State which FR/BR IDs are now live in the summary.

@@ -33,6 +33,8 @@ hardcoded anywhere in the code.
 - `openspec/` — spec-driven change workflow: `specs/` is what shipped, `changes/` is in flight,
   `changes/archive/` is done.
 - `.claude/` — OpenSpec skills and slash commands for agents working in this repo.
+- `scripts/` — repo-level checks: `verify-spec-coverage.sh` (spec ↔ test mapping) and
+  `validate/<change-name>.sh`, one mandatory runtime validation script per OpenSpec change.
 - `docker-compose.yml` — local infrastructure only: `postgres:17` and `minio/minio`. The apps run
   on the host.
 
@@ -58,6 +60,15 @@ pnpm verify      # typecheck + lint + test + openspec validate --all
 pnpm format      # Prettier over the repo
 pnpm format:check
 pnpm clean       # removes build output
+```
+
+`pnpm verify` never starts the app, so it cannot prove a change end to end. That is what each
+change's mandatory validation script does — run it with the stack up (`docker compose up -d` plus
+`pnpm dev`):
+
+```bash
+scripts/verify-spec-coverage.sh --change <change-name>   # which FR/BR IDs have tests
+scripts/validate/<change-name>.sh                        # the change, against the running app
 ```
 
 Scope a task to one package with `--filter`:
@@ -187,6 +198,24 @@ How it fits together:
   to see which spec scenario IDs (`FR-*`, `BR-*`) have matching test references and which do not.
   Both agents have a verify skill (`openspec-verify` for Antigravity, `/opsx:verify` for Claude
   Code) that chains structural validation, build checks and this mapping into one advisory report.
+- **Runtime validation scripts are mandatory, one per OpenSpec change** —
+  `scripts/validate/<change-name>.sh`, written as part of the change, not after it. Jest and Vitest
+  prove the code in isolation; this script proves the change against the app that is actually
+  running — real Postgres, real MinIO, real HTTP — which is the hand-verification the archive gate
+  asks for, made repeatable. The contract:
+  - Bash with `set -euo pipefail`, executable, no required arguments.
+  - Every host comes from the environment with a local default — `API_BASE_URL`
+    (`http://localhost:3000/api`), `WEB_BASE_URL` (`http://localhost:5173`) — never a hardcoded one
+    (BR-100). Unreachable API: print the URL tried and exit non-zero, never skip silently (BR-050).
+  - It creates the accounts, folders and files it needs through the public API and deletes them at
+    the end, so two runs in a row both pass and it never leans on data left by another script.
+  - One assertion per scenario, each line naming the `FR-*`/`BR-*` ID it proves and pass/fail. A
+    failure prints the request, and the expected versus actual status **and** error code, then
+    exits non-zero on the spot.
+  - Failure paths are the point: assert the `404`/`413`/`415`/`409` the change introduces, not only
+    its happy path.
+  - It closes by printing the manual checklist for what only a browser can show (focus, drag-drop,
+    optimistic UI), so hand-verification before archive is a list, not a memory exercise.
 
 > TODO: no CI configuration exists in this repo (`.github/` is absent), so all of the above runs
 > locally only.
@@ -251,10 +280,18 @@ Rules of engagement:
 6. **Use the OpenSpec workflow** for a new slice: propose → apply → sync → archive, via the skills
    in [.claude/skills/](.claude/skills/). Archive only after a change has been verified by hand in
    the running app, not merely by a green test run.
-7. **Commits are authored under the user's name only** — never add a `Co-Authored-By` trailer. Do
+7. **Every OpenSpec change ships a validation script — no exceptions.** `tasks.md` carries a task
+   for `scripts/validate/<change-name>.sh` that exercises the change's `FR-*`/`BR-*` scenarios
+   against the running app, and the change is not complete until that script exits 0. The contract
+   it must satisfy is in [§ Testing Strategy](#testing-strategy). A change whose scenarios are
+   entirely UI-only still ships the script: it drives the API the UI calls and prints the manual
+   checklist for the rest. Dropping it needs an explicit decision from the user, recorded in
+   `design.md`.
+8. **Commits are authored under the user's name only** — never add a `Co-Authored-By` trailer. Do
    not commit or push unless asked.
-8. **Required before reporting completion:** `pnpm typecheck && pnpm lint && pnpm test`, with any
-   failure pasted verbatim.
+9. **Required before reporting completion:** `pnpm typecheck && pnpm lint && pnpm test`, plus the
+   change's `scripts/validate/<change-name>.sh` against the running app, with any failure pasted
+   verbatim.
 
 > TODO: no CODEOWNERS, review policy or rate limit is defined for automated agents.
 
