@@ -69,4 +69,3 @@ describe('the environment contract', () => {
     });
   });
 });
-

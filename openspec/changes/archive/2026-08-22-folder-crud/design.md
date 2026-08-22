@@ -20,6 +20,7 @@ See proposal.md — Why. Key constraints from the existing codebase:
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Ship `POST /nodes/folders`, `PATCH /nodes/:id`, `DELETE /nodes/:id` behind the closed guard.
 - Write `resolveUniqueName(tx, dataRoomId, parentId, name, excludeId?)` once, in
   `src/nodes/name.helper.ts`. Upload (slice 6), move (slice 8) and copy (slice 15) import it —
@@ -28,6 +29,7 @@ See proposal.md — Why. Key constraints from the existing codebase:
 - `DeleteImpact` fetches `GET /nodes/:id/stats` and keeps the confirm button disabled until done.
 
 **Non-Goals:**
+
 - File upload / download (slice 6).
 - Move dialog and cycle check (slice 8 — `FR-FLDR-040`).
 - `FR-ACCT-020` folder stats in the details pane (slice 7).

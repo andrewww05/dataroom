@@ -109,13 +109,20 @@ export class FileTooLargeException extends ApiException {
 
 export class UnsupportedTypeException extends ApiException {
   constructor() {
-    super(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_TYPE, 'That file type is not allowed.');
+    super(
+      HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+      ErrorCode.UNSUPPORTED_TYPE,
+      'That file type is not allowed.',
+    );
   }
 }
 
 export class StorageUnavailableException extends ApiException {
   constructor() {
-    super(HttpStatus.BAD_GATEWAY, ErrorCode.STORAGE_UNAVAILABLE, 'The storage service is temporarily unavailable.');
+    super(
+      HttpStatus.BAD_GATEWAY,
+      ErrorCode.STORAGE_UNAVAILABLE,
+      'The storage service is temporarily unavailable.',
+    );
   }
 }
-

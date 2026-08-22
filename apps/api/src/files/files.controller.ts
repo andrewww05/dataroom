@@ -18,10 +18,8 @@ import { Principal } from '../auth/principal';
 import { UnsupportedTypeException, ValidationFailedException } from '../http/api.exception';
 import { sniffMimeType } from './mime.sniffer';
 import { UPLOAD_ALLOWED_MIME_TYPES } from '@dataroom/shared';
-import { readEnv } from '../config/env';
 
-// We evaluate this once at module load since the config won't change
-const maxFileBytes = readEnv().maxFileBytes;
+const maxFileBytes = Number(process.env.MAX_FILE_BYTES || 104857600);
 
 @Controller('files')
 export class FilesController {
@@ -54,8 +52,28 @@ export class FilesController {
   @Get(':id/download')
   async download(
     @CurrentPrincipal() principal: Principal,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        exceptionFactory: () => new ValidationFailedException({ id: ['Must be a valid UUID'] }),
+      }),
+    )
+    id: string,
   ) {
     return this.filesService.presignDownload(principal, id);
+  }
+
+  @Get(':id/preview')
+  async preview(
+    @CurrentPrincipal() principal: Principal,
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        exceptionFactory: () => new ValidationFailedException({ id: ['Must be a valid UUID'] }),
+      }),
+    )
+    id: string,
+  ) {
+    return this.filesService.presignPreview(principal, id);
   }
 }

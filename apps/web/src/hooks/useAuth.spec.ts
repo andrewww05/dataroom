@@ -15,7 +15,7 @@ describe('useAuth', () => {
 
   it('initializes with no token', async () => {
     await useAuth.getState().initialize();
-    
+
     expect(useAuth.getState().isInitializing).toBe(false);
     expect(useAuth.getState().user).toBeNull();
     expect(client.fetchClient).not.toHaveBeenCalled();
@@ -23,13 +23,13 @@ describe('useAuth', () => {
 
   it('initializes and fetches user with token', async () => {
     localStorage.setItem('jwt_token', 'fake-token');
-    
+
     const mockData = {
       id: 'u-1',
       email: 'test@example.com',
-      dataRoom: { id: 'd-1', name: 'My Room', rootId: 'n-1' }
+      dataRoom: { id: 'd-1', name: 'My Room', rootId: 'n-1' },
     };
-    
+
     vi.mocked(client.fetchClient).mockResolvedValueOnce(mockData);
 
     await useAuth.getState().initialize();
@@ -54,7 +54,7 @@ describe('useAuth', () => {
   it('sets session and stores token', () => {
     const user = { id: 'u-1', email: 'test@example.com' };
     const room = { id: 'd-1', name: 'My Room', rootId: 'n-1' };
-    
+
     useAuth.getState().setSession(user, room, 'new-token');
 
     expect(localStorage.getItem('jwt_token')).toBe('new-token');
@@ -64,8 +64,11 @@ describe('useAuth', () => {
 
   it('clears session', () => {
     localStorage.setItem('jwt_token', 'existing');
-    useAuth.setState({ user: { id: '1', email: 'e' }, dataRoom: { id: '1', name: 'n', rootId: '1' } });
-    
+    useAuth.setState({
+      user: { id: '1', email: 'e' },
+      dataRoom: { id: '1', name: 'n', rootId: '1' },
+    });
+
     useAuth.getState().clearSession();
 
     expect(localStorage.getItem('jwt_token')).toBeNull();

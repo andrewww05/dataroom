@@ -5,22 +5,28 @@ Optionally accepts a change name: `/opsx:verify add-auth`. Without it, verifies 
 **Steps**
 
 1. **Structural validation**
+
    ```bash
    openspec validate --all --strict
    ```
+
    If a change name is given, also run `openspec validate "$CHANGE_NAME" --strict`.
    Report any issues but continue.
 
 2. **Build and tests**
+
    ```bash
    pnpm typecheck && pnpm lint && pnpm test
    ```
+
    Report failures verbatim. Continue to step 3 regardless.
 
 3. **Spec ↔ Test mapping**
+
    ```bash
    scripts/verify-spec-coverage.sh
    ```
+
    Or if scoped: `scripts/verify-spec-coverage.sh --change "$CHANGE_NAME"`
 
    The script extracts every `#### Scenario: FR-XXX-NNN` / `#### Scenario: BR-NNN` from specs,
@@ -47,6 +53,7 @@ Optionally accepts a change name: `/opsx:verify add-auth`. Without it, verifies 
    - List any missing IDs (advisory, not blocking)
 
 **Guardrails**
+
 - Read-only on repo files: do not modify them. The validation script does write through the API —
   that is its job, and it cleans up after itself
 - Advisory: exit cleanly even when coverage gaps exist

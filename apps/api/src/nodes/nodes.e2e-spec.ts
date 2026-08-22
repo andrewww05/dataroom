@@ -17,7 +17,7 @@ describe('Nodes (e2e)', () => {
 
   beforeAll(async () => {
     prisma = createTestClient();
-    
+
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
 
     app = moduleRef.createNestApplication();
@@ -26,17 +26,19 @@ describe('Nodes (e2e)', () => {
 
     const email = `test-${crypto.randomUUID()}@example.com`;
     const password = 'Password123!';
-    
+
     const signUpRes = await request(app.getHttpServer())
       .post(`/${API_PREFIX}/auth/signup`)
       .send({ email, password })
       .expect(201);
-      
+
     token = signUpRes.body.token;
 
     const user = await prisma.user.findUnique({ where: { email } });
     const room = await prisma.dataRoom.findFirst({ where: { ownerId: user!.id } });
-    const rootNode = await prisma.node.findFirst({ where: { dataRoomId: room!.id, parentId: null } });
+    const rootNode = await prisma.node.findFirst({
+      where: { dataRoomId: room!.id, parentId: null },
+    });
     rootNodeId = rootNode!.id;
   });
 
@@ -75,13 +77,13 @@ describe('Nodes (e2e)', () => {
 
     expect(response.body.name).toBe('Conflict Folder (2)');
   });
-  
+
   it('stats preflight (200 with real counts)', async () => {
     const response = await request(app.getHttpServer())
       .get(`/${API_PREFIX}/nodes/${rootNodeId}/stats`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-      
+
     expect(response.body.folders).toBeGreaterThanOrEqual(2);
     expect(response.body.files).toBeGreaterThanOrEqual(0);
     expect(response.body.bytes).toBeGreaterThanOrEqual(0);

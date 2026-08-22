@@ -1,6 +1,7 @@
 # folders Specification
 
 ## Purpose
+
 The folder capability covers creating, renaming, and deleting folders in the Data Room tree.
 It also introduces the BR-020 `resolveUniqueName` helper that every subsequent write path
 (rename, move, upload, copy) reuses — writing it once here avoids four ad-hoc versions later.
@@ -101,6 +102,7 @@ server-side checks.
 
 One `resolveUniqueName(tx, dataRoomId, parentId, name, excludeId?)` function is the single
 implementation for all write paths. The function:
+
 1. Trims the name; rejects empty, `.`, `..`, names containing `/` or `\`, names longer than 255
    characters with `INVALID_NAME`.
 2. Checks for a case-insensitive collision in `(dataRoomId, parentId)`.

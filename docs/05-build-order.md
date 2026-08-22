@@ -7,46 +7,46 @@ boundary — it is where the app first becomes worth showing.
 
 ## Core
 
-| # | Slice | Covers | ~ |
-| --- | --- | --- | --- |
-| 1 | Local infra: `docker compose` (Postgres + MinIO), Prisma schema (`User`, `DataRoom`, `Node`, `Share`), first migration including the two hand-written partial unique indexes, bucket-on-boot | [03 § Model](./03-domain-and-api.md#model) | 40 m |
-| 2 | Auth: signup/login/me, argon2, Passport JWT guard applied globally with a `@Public()` escape, and the signup transaction that creates `User` + `DataRoom` + root `Node` | FR-AUTH-\*, FR-ROOM-010 | 45 m |
-| 3 | Nodes read side: `GET /nodes/:id`, `/children` with keyset paging, `/path`, `/stats`; the principal + room scope check in one place | FR-NAV-020/030, FR-ACCT-020, BR-010 | 45 m |
-| 4 | Web shell: Tailwind + shadcn init and the token file, TanStack Router + Query, sign-in/sign-up screens, three-pane layout, Data Room title, breadcrumbs, list view, and the empty / skeleton / error states | FR-NAV-020/040, FR-VIEW-010 (list), FR-ROOM-010 | 1 h 30 m |
-| 5 | Folder CRUD: create, rename, delete with the stats preflight and the BR-030 dialog; the BR-020 suffixing helper written once, here | FR-FLDR-010/020/030 | 1 h |
-| 6 | Upload and download: multipart to `PutObject` with sniffed-type and size validation, presigned redirects, the progress queue with cancel and retry | FR-FILE-010/020, BR-040/050/060 | 1 h 15 m |
-| 7 | Viewing: the full-screen viewer (PDF + image + fallback), the details pane, folder stats in it | FR-VIEW-020/060 | 45 m |
-| — | **Cut line — the app is demonstrable** | | **~6 h 40 m** |
-| 8 | File rename, the Move dialog with the tree as picker, drag-onto-folder, delete with confirm, folder move + cycle check | FR-FILE-030/040/050, FR-FLDR-040 | 45 m |
-| 9 | Principal refactor: the guard resolves owner-or-share, handlers assert a capability, subtree scope check on the ancestor walk | BR-070 | 45 m |
-| 10 | Sharing: create/list/revoke, the share dialog including the Data-Room-wide case, `/s/{token}` reusing the listing panes read-only, the removed-by-owner screen, Shared with me, `Referrer-Policy` on `/s/*` | FR-SHARE-\* | 1 h 45 m |
-| 11 | The README deliverable: design decisions, ERD, the three scaling answers, the AI note, setup from a clean clone, what any host has to provide, and the idempotent demo seed | FR-OPS-010/020/030 | 45 m |
-| 12 | Tests: unit on the suffixing helper and the cycle check, integration on share scope and read-only rejection, e2e on upload → list → move → share → revoke | BR-020/060/070 | 1 h |
-| — | **Core complete — ~11 h 40 m** | | |
+| #   | Slice                                                                                                                                                                                                       | Covers                                          | ~             |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------- |
+| 1   | Local infra: `docker compose` (Postgres + MinIO), Prisma schema (`User`, `DataRoom`, `Node`, `Share`), first migration including the two hand-written partial unique indexes, bucket-on-boot                | [03 § Model](./03-domain-and-api.md#model)      | 40 m          |
+| 2   | Auth: signup/login/me, argon2, Passport JWT guard applied globally with a `@Public()` escape, and the signup transaction that creates `User` + `DataRoom` + root `Node`                                     | FR-AUTH-\*, FR-ROOM-010                         | 45 m          |
+| 3   | Nodes read side: `GET /nodes/:id`, `/children` with keyset paging, `/path`, `/stats`; the principal + room scope check in one place                                                                         | FR-NAV-020/030, FR-ACCT-020, BR-010             | 45 m          |
+| 4   | Web shell: Tailwind + shadcn init and the token file, TanStack Router + Query, sign-in/sign-up screens, three-pane layout, Data Room title, breadcrumbs, list view, and the empty / skeleton / error states | FR-NAV-020/040, FR-VIEW-010 (list), FR-ROOM-010 | 1 h 30 m      |
+| 5   | Folder CRUD: create, rename, delete with the stats preflight and the BR-030 dialog; the BR-020 suffixing helper written once, here                                                                          | FR-FLDR-010/020/030                             | 1 h           |
+| 6   | Upload and download: multipart to `PutObject` with sniffed-type and size validation, presigned redirects, the progress queue with cancel and retry                                                          | FR-FILE-010/020, BR-040/050/060                 | 1 h 15 m      |
+| 7   | Viewing: the full-screen viewer (PDF + image + fallback), the details pane, folder stats in it                                                                                                              | FR-VIEW-020/060                                 | 45 m          |
+| —   | **Cut line — the app is demonstrable**                                                                                                                                                                      |                                                 | **~6 h 40 m** |
+| 8   | File rename, the Move dialog with the tree as picker, drag-onto-folder, delete with confirm, folder move + cycle check                                                                                      | FR-FILE-030/040/050, FR-FLDR-040                | 45 m          |
+| 9   | Principal refactor: the guard resolves owner-or-share, handlers assert a capability, subtree scope check on the ancestor walk                                                                               | BR-070                                          | 45 m          |
+| 10  | Sharing: create/list/revoke, the share dialog including the Data-Room-wide case, `/s/{token}` reusing the listing panes read-only, the removed-by-owner screen, Shared with me, `Referrer-Policy` on `/s/*` | FR-SHARE-\*                                     | 1 h 45 m      |
+| 11  | The README deliverable: design decisions, ERD, the three scaling answers, the AI note, setup from a clean clone, what any host has to provide, and the idempotent demo seed                                 | FR-OPS-010/020/030                              | 45 m          |
+| 12  | Tests: unit on the suffixing helper and the cycle check, integration on share scope and read-only rejection, e2e on upload → list → move → share → revoke                                                   | BR-020/060/070                                  | 1 h           |
+| —   | **Core complete — ~11 h 40 m**                                                                                                                                                                              |                                                 |               |
 
 ## Extra credit, part 1
 
-| # | Slice | Covers | ~ |
-| --- | --- | --- | --- |
-| 13 | Name search: the `pg_trgm` extension and GIN index as their own migration, the endpoint on it, a debounced box, results list, back-to-folder | FR-SRCH-010/020 | 30 m |
+| #   | Slice                                                                                                                                        | Covers          | ~    |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---- |
+| 13  | Name search: the `pg_trgm` extension and GIN index as their own migration, the endpoint on it, a debounced box, results list, back-to-folder | FR-SRCH-010/020 | 30 m |
 
 Search comes before Polish because a diligence room with 100,000 files is unusable without it and it
 costs half an hour — the brief lists it first among its optional items for the same reason.
 
 ## Polish
 
-| # | Slice | Covers | ~ |
-| --- | --- | --- | --- |
-| 14 | Multi-select (click / Ctrl / Shift / Ctrl+A), bulk delete / move / download, context menu mirroring the toolbar, storage-used footer | FR-FILE-070, FR-VIEW-030, FR-ACCT-010 | 1 h 15 m |
-| 15 | Cut / copy / paste, with server-side `CopyObject` and subtree copy | FR-FILE-060 | 45 m |
-| 16 | Keyboard map, focus handling, `aria-label`s, focus traps | FR-VIEW-040 | 30 m |
-| 17 | Tiles view and the dark-mode toggle | FR-VIEW-010/050 | 30 m |
+| #   | Slice                                                                                                                                | Covers                                | ~        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- | -------- |
+| 14  | Multi-select (click / Ctrl / Shift / Ctrl+A), bulk delete / move / download, context menu mirroring the toolbar, storage-used footer | FR-FILE-070, FR-VIEW-030, FR-ACCT-010 | 1 h 15 m |
+| 15  | Cut / copy / paste, with server-side `CopyObject` and subtree copy                                                                   | FR-FILE-060                           | 45 m     |
+| 16  | Keyboard map, focus handling, `aria-label`s, focus traps                                                                             | FR-VIEW-040                           | 30 m     |
+| 17  | Tiles view and the dark-mode toggle                                                                                                  | FR-VIEW-010/050                       | 30 m     |
 
 ## Extra credit, part 2
 
-| # | Slice | Covers | ~ |
-| --- | --- | --- | --- |
-| 18 | Versioning: the `FileVersion` migration moving `storageKey` off `Node`, the upload conflict prompt, the version list, restore | FR-VER-\*, BR-080 | 1 h 15 m |
+| #   | Slice                                                                                                                         | Covers            | ~        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------- |
+| 18  | Versioning: the `FileVersion` migration moving `storageKey` off `Node`, the upload conflict prompt, the version list, restore | FR-VER-\*, BR-080 | 1 h 15 m |
 
 Total: ~16 h 25 m, of which the first 11 h 40 m is everything the brief requires that this plan
 keeps — see [01 § Cut](./01-scope.md#cut) for the deployment requirement it deliberately does not.

@@ -16,6 +16,7 @@ describe('FilesController (e2e)', () => {
   let storage: StorageService;
   let ErrorCode: Record<string, string>;
   let token: string;
+  let otherToken: string;
   let rootFolderId: string;
   let otherRootFolderId: string;
 
@@ -36,8 +37,14 @@ describe('FilesController (e2e)', () => {
     // Create user and get token
     const email = `test-${crypto.randomUUID()}@example.com`;
     const password = 'Password123!';
-    await request(app.getHttpServer()).post(`/${API_PREFIX}/auth/signup`).send({ email, password }).expect(201);
-    const loginRes = await request(app.getHttpServer()).post(`/${API_PREFIX}/auth/login`).send({ email, password }).expect(200);
+    await request(app.getHttpServer())
+      .post(`/${API_PREFIX}/auth/signup`)
+      .send({ email, password })
+      .expect(201);
+    const loginRes = await request(app.getHttpServer())
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email, password })
+      .expect(200);
     token = loginRes.body.token;
 
     // Get their root folder
@@ -49,11 +56,18 @@ describe('FilesController (e2e)', () => {
 
     // Create another user
     const otherEmail = `other-${crypto.randomUUID()}@example.com`;
-    await request(app.getHttpServer()).post(`/${API_PREFIX}/auth/signup`).send({ email: otherEmail, password }).expect(201);
-    const otherLoginRes = await request(app.getHttpServer()).post(`/${API_PREFIX}/auth/login`).send({ email: otherEmail, password }).expect(200);
+    await request(app.getHttpServer())
+      .post(`/${API_PREFIX}/auth/signup`)
+      .send({ email: otherEmail, password })
+      .expect(201);
+    const otherLoginRes = await request(app.getHttpServer())
+      .post(`/${API_PREFIX}/auth/login`)
+      .send({ email: otherEmail, password })
+      .expect(200);
+    otherToken = otherLoginRes.body.token;
     const otherMeRes = await request(app.getHttpServer())
       .get(`/${API_PREFIX}/auth/me`)
-      .set('Authorization', `Bearer ${otherLoginRes.body.token}`)
+      .set('Authorization', `Bearer ${otherToken}`)
       .expect(200);
     otherRootFolderId = otherMeRes.body.dataRoom.rootId;
   });
@@ -77,7 +91,10 @@ describe('FilesController (e2e)', () => {
   };
 
   const TXT_BUFFER = Buffer.from('hello world', 'utf-8');
-  const PDF_BUFFER = Buffer.from('%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\nxref\n0 2\n0000000000 65535 f\n0000000009 00000 n\ntrailer\n<<\n/Size 2\n/Root 1 0 R\n>>\nstartxref\n49\n%%EOF', 'utf-8');
+  const PDF_BUFFER = Buffer.from(
+    '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\nxref\n0 2\n0000000000 65535 f\n0000000009 00000 n\ntrailer\n<<\n/Size 2\n/Root 1 0 R\n>>\nstartxref\n49\n%%EOF',
+    'utf-8',
+  );
   const SVG_BUFFER = Buffer.from('<svg></svg>', 'utf-8');
 
   it('uploads a file successfully', async () => {
@@ -214,6 +231,76 @@ describe('FilesController (e2e)', () => {
     expect(Buffer.from(bytes).equals(PDF_BUFFER)).toBe(true);
   });
 
+  describe('preview', () => {
+    let fileId: string;
+    let folderId: string;
+
+    beforeAll(async () => {
+      const folderRes = await request(app.getHttpServer())
+        .post(`/${API_PREFIX}/nodes/folders`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ parentId: rootFolderId, name: 'preview-folder' })
+        .expect(201);
+      folderId = folderRes.body.id;
+
+      const uploadRes = await request(app.getHttpServer())
+        .post(`/${API_PREFIX}/files`)
+        .set('Authorization', `Bearer ${token}`)
+        .field('parentId', rootFolderId)
+        .attach('file', PDF_BUFFER, 'preview.pdf')
+        .expect(201);
+      fileId = uploadRes.body.id;
+    });
+
+    it('generates presigned preview url', async () => {
+      const previewRes = await request(app.getHttpServer())
+        .get(`/${API_PREFIX}/files/${fileId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(previewRes.body.url).toBeDefined();
+      expect(previewRes.body.url).toContain('http://localhost:9000');
+      expect(previewRes.body.expiresAt).toBeDefined();
+
+      const minioRes = await fetch(previewRes.body.url);
+      expect(minioRes.status).toBe(200);
+      expect(minioRes.headers.get('content-disposition')).toContain('inline');
+      expect(minioRes.headers.get('content-type')).toContain('application/pdf');
+    });
+
+    it('refuses folder id (BR-010)', async () => {
+      await request(app.getHttpServer())
+        .get(`/${API_PREFIX}/files/${folderId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('refuses unknown id (BR-010)', async () => {
+      await request(app.getHttpServer())
+        .get(`/${API_PREFIX}/files/${crypto.randomUUID()}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('refuses file in another Data Room (BR-010)', async () => {
+      await request(app.getHttpServer())
+        .get(`/${API_PREFIX}/files/${fileId}/preview`)
+        .set('Authorization', `Bearer ${otherToken}`)
+        .expect(404);
+    });
+
+    it('refuses anonymous call (FR-AUTH-030)', async () => {
+      await request(app.getHttpServer()).get(`/${API_PREFIX}/files/${fileId}/preview`).expect(401);
+    });
+
+    it('refuses malformed id (VALIDATION_FAILED)', async () => {
+      await request(app.getHttpServer())
+        .get(`/${API_PREFIX}/files/not-a-uuid/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
+    });
+  });
+
   it('deletes object when file is deleted (BR-060)', async () => {
     const uploadRes = await request(app.getHttpServer())
       .post(`/${API_PREFIX}/files`)
@@ -224,7 +311,7 @@ describe('FilesController (e2e)', () => {
 
     const { dataRoomId } = await prisma.node.findUniqueOrThrow({ where: { id: rootFolderId } });
     const storageKey = `${dataRoomId}/${uploadRes.body.id}`;
-    
+
     expect(await checkObjectExists(storageKey)).toBe(true);
 
     await request(app.getHttpServer())
@@ -259,7 +346,7 @@ describe('FilesController (e2e)', () => {
     const { dataRoomId } = await prisma.node.findUniqueOrThrow({ where: { id: rootFolderId } });
     const key1 = `${dataRoomId}/${uploadRes1.body.id}`;
     const key2 = `${dataRoomId}/${uploadRes2.body.id}`;
-    
+
     expect(await checkObjectExists(key1)).toBe(true);
     expect(await checkObjectExists(key2)).toBe(true);
 

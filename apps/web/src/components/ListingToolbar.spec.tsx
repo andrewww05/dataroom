@@ -17,13 +17,13 @@ const FOLDER_NODE: FsNode = {
 describe('ListingToolbar', () => {
   it('renders New Folder button always', () => {
     render(
-      <ListingToolbar 
-        selectedNodes={[]} 
+      <ListingToolbar
+        selectedNodes={[]}
         onCreateFolder={vi.fn()}
-        onUploadFiles={vi.fn()} 
-        onRename={vi.fn()} 
-        onDelete={vi.fn()} 
-      />
+        onUploadFiles={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
     expect(screen.getByRole('button', { name: /new folder/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /rename/i })).not.toBeInTheDocument();
@@ -32,13 +32,13 @@ describe('ListingToolbar', () => {
 
   it('renders Rename and Delete when exactly one node is selected', () => {
     render(
-      <ListingToolbar 
-        selectedNodes={[FOLDER_NODE]} 
+      <ListingToolbar
+        selectedNodes={[FOLDER_NODE]}
         onCreateFolder={vi.fn()}
-        onUploadFiles={vi.fn()} 
-        onRename={vi.fn()} 
-        onDelete={vi.fn()} 
-      />
+        onUploadFiles={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
     expect(screen.getByRole('button', { name: /new folder/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /rename/i })).toBeInTheDocument();
@@ -50,16 +50,16 @@ describe('ListingToolbar', () => {
     // The spec said: Delete visible when any selection exists (BR-100 — absent when inapplicable, never disabled)
     // Let's modify our test to expect what we implemented (single selection for both for now, as bulk delete is not supported yet by the API).
     // Actually the spec says "Delete visible when any selection exists", but we implemented it only for single selection.
-    
+
     // So for now, we just test single selection.
     render(
-      <ListingToolbar 
-        selectedNodes={[FOLDER_NODE]} 
+      <ListingToolbar
+        selectedNodes={[FOLDER_NODE]}
         onCreateFolder={vi.fn()}
-        onUploadFiles={vi.fn()} 
-        onRename={vi.fn()} 
-        onDelete={vi.fn()} 
-      />
+        onUploadFiles={vi.fn()}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+      />,
     );
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
   });

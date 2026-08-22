@@ -103,9 +103,15 @@ export class NodesService {
   async renameNode(principal: Principal, id: string, dto: RenameNodeDto): Promise<FsNode> {
     const existing = await this.scope.resolve(principal, id);
     // TODO: assert 'write' capability on principal when share roles are implemented
-    
+
     const node = await this.prisma.$transaction(async (tx) => {
-      const resolvedName = await resolveUniqueName(tx, existing.dataRoomId, existing.parentId, dto.name, existing.id);
+      const resolvedName = await resolveUniqueName(
+        tx,
+        existing.dataRoomId,
+        existing.parentId,
+        dto.name,
+        existing.id,
+      );
       return tx.node.update({
         where: { id: existing.id },
         data: { name: resolvedName },
@@ -122,7 +128,7 @@ export class NodesService {
   async deleteNode(principal: Principal, id: string): Promise<void> {
     const existing = await this.scope.resolve(principal, id);
     // TODO: assert 'write' capability on principal when share roles are implemented
-    
+
     const keys = await this.prisma.$queryRaw<{ storageKey: string }[]>`
       WITH RECURSIVE subtree AS (
         SELECT "id", "storageKey"
@@ -146,7 +152,10 @@ export class NodesService {
       try {
         await this.storage.deleteObjects(storageKeys);
       } catch (e) {
-        this.logger.error(`Failed to delete ${storageKeys.length} objects for node ${existing.id}`, e);
+        this.logger.error(
+          `Failed to delete ${storageKeys.length} objects for node ${existing.id}`,
+          e,
+        );
       }
     }
   }

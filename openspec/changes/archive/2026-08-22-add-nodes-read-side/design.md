@@ -107,10 +107,10 @@ that as a `Filter` _inside_ the scan rather than as its start condition. Both fo
 the scan reads. Measured on the compose Postgres over a 20,000-row folder:
 
 | Cursor at | `OR` form: rows discarded / time | Row-value form |
-| --- | --- | --- |
-| page 1 | 1 / 0.04ms | 0 / 0.03ms |
-| page 90 | 9,000 / 1.5ms | 0 / 0.03ms |
-| page 190 | 19,001 / 3.0ms | 0 / 0.03ms |
+| --------- | -------------------------------- | -------------- |
+| page 1    | 1 / 0.04ms                       | 0 / 0.03ms     |
+| page 90   | 9,000 / 1.5ms                    | 0 / 0.03ms     |
+| page 190  | 19,001 / 3.0ms                   | 0 / 0.03ms     |
 
 The `OR` form's cost grows with depth into the folder, and FR-NAV-030 says a page's cost may not.
 The `Filter` it adds is on `(type, name, id)` rather than over other Data Rooms, so the acceptance

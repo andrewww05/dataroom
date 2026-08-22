@@ -61,7 +61,10 @@ describe('sniffMimeType', () => {
   describe('ZIP containers', () => {
     const createZip = (content: string) => {
       const buf = Buffer.alloc(200);
-      buf[0] = 0x50; buf[1] = 0x4b; buf[2] = 0x03; buf[3] = 0x04; // PK\x03\x04
+      buf[0] = 0x50;
+      buf[1] = 0x4b;
+      buf[2] = 0x03;
+      buf[3] = 0x04; // PK\x03\x04
       buf.write(content, 4);
       return buf;
     };
@@ -83,17 +86,23 @@ describe('sniffMimeType', () => {
 
     it('detects OOXML Word', () => {
       const docx = createZip('some random bytes word/document.xml');
-      expect(sniffMimeType(docx)).toBe('application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      expect(sniffMimeType(docx)).toBe(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
     });
 
     it('detects OOXML Excel', () => {
       const xlsx = createZip('some random bytes xl/workbook.xml');
-      expect(sniffMimeType(xlsx)).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      expect(sniffMimeType(xlsx)).toBe(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
     });
 
     it('detects OOXML PowerPoint', () => {
       const pptx = createZip('some random bytes ppt/presentation.xml');
-      expect(sniffMimeType(pptx)).toBe('application/vnd.openxmlformats-officedocument.presentationml.presentation');
+      expect(sniffMimeType(pptx)).toBe(
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      );
     });
   });
 

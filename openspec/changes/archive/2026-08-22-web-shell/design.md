@@ -5,11 +5,13 @@ This change builds the foundational web shell for the Data Room application, int
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Establish the client-side routing, layout (three-pane), and data fetching architecture.
 - Implement the authentication flow using the backend's JWT-based authentication.
 - Render the file and folder list view with support for keyset pagination.
 
 **Non-Goals:**
+
 - Folder creation, rename, and delete operations (Slice 5).
 - File upload and download operations (Slice 6).
 - The full-screen document viewer (Slice 7).
@@ -17,14 +19,18 @@ This change builds the foundational web shell for the Data Room application, int
 ## Decisions
 
 ### 1. Routing and State Management
+
 We will use **TanStack Router** for type-safe, file-based routing and **TanStack Query** for server state management (caching, deduplication, pagination).
-- *Alternative Rejected*: React Router and Redux. Redux is too heavy for an application that primarily syncs server state, and TanStack Query natively handles the keyset pagination model used by our API.
+
+- _Alternative Rejected_: React Router and Redux. Redux is too heavy for an application that primarily syncs server state, and TanStack Query natively handles the keyset pagination model used by our API.
 
 ### 2. Authentication State
+
 The JWT token will be stored in `localStorage` to persist sessions across reloads. The application will fetch `GET /auth/me` on boot to populate a global Zustand store with the current user and their Data Room context.
 
 ### 3. API Communication
-All client-side fetches will use the native `fetch` API, wrapped in a generic client that automatically attaches the `Authorization: Bearer <jwt>` header to satisfy **BR-010**. 
+
+All client-side fetches will use the native `fetch` API, wrapped in a generic client that automatically attaches the `Authorization: Bearer <jwt>` header to satisfy **BR-010**.
 Following **BR-100**, the client will not hardcode origins. It will rely on Vite's proxy during development (`VITE_API_PROXY_TARGET`) and `VITE_API_URL` for production builds.
 
 ## Invariants Maintained
@@ -35,6 +41,7 @@ Following **BR-100**, the client will not hardcode origins. It will rely on Vite
 ## Relevant API Contracts (from docs/03)
 
 **Endpoints:**
+
 - `POST /auth/signup` (`{ email, password }`) returns `{ token, user, dataRoom }`
 - `POST /auth/login` (`{ email, password }`) returns `{ token, user, dataRoom }`
 - `GET /auth/me` returns `{ id, email, dataRoom: { id, name, rootId } }`
@@ -42,6 +49,7 @@ Following **BR-100**, the client will not hardcode origins. It will rely on Vite
 - `GET /nodes/:id/path` returns `Breadcrumb[]`
 
 **Error Codes:**
+
 - `UNAUTHENTICATED` (401)
 - `INVALID_CREDENTIALS` (401)
 - `EMAIL_TAKEN` (409)

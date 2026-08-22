@@ -94,13 +94,13 @@ including from two concurrent sign-ups — maps to `409 EMAIL_TAKEN` and the tra
 
 **One filter, one envelope.** `{ provide: APP_FILTER, useClass: ApiExceptionFilter }` maps:
 
-| Thrown | Code | HTTP |
-| --- | --- | --- |
-| Guard rejection / expired, forged or absent token | `UNAUTHENTICATED` | 401 |
-| Bad email or password | `INVALID_CREDENTIALS` | 401 |
-| `P2002` on `User.email` | `EMAIL_TAKEN` | 409 |
-| `ValidationPipe` rejection (`details` from its errors) | `VALIDATION_FAILED` | 400 |
-| Anything else | `INTERNAL` | 500 |
+| Thrown                                                 | Code                  | HTTP |
+| ------------------------------------------------------ | --------------------- | ---- |
+| Guard rejection / expired, forged or absent token      | `UNAUTHENTICATED`     | 401  |
+| Bad email or password                                  | `INVALID_CREDENTIALS` | 401  |
+| `P2002` on `User.email`                                | `EMAIL_TAKEN`         | 409  |
+| `ValidationPipe` rejection (`details` from its errors) | `VALIDATION_FAILED`   | 400  |
+| Anything else                                          | `INTERNAL`            | 500  |
 
 `ValidationPipe` gets an `exceptionFactory` that folds class-validator's errors into
 `details: Record<string, string[]>`. `INTERNAL` is the one code docs/03's table lacks; the last task

@@ -18,13 +18,13 @@ including the deliverable that is not a feature — a README that answers its th
 name search, then versioning on name conflicts. Nothing outside those three tiers is in the plan;
 see [01 § Cut](./01-scope.md#cut) for what was dropped and why.
 
-| File | What it holds |
-| --- | --- |
-| [01-scope.md](./01-scope.md) | The tiers, what was cut, and a traceability table against every line of the brief |
-| [02-requirements.md](./02-requirements.md) | Numbered functional requirements and business rules |
-| [03-domain-and-api.md](./03-domain-and-api.md) | ERD, data model, storage, REST surface, errors, deployment, "How it scales" |
-| [04-ux.md](./04-ux.md) | Screen layout, interactions, keyboard, component inventory, state ownership |
-| [05-build-order.md](./05-build-order.md) | Slices in build order with a cut line |
+| File                                           | What it holds                                                                     |
+| ---------------------------------------------- | --------------------------------------------------------------------------------- |
+| [01-scope.md](./01-scope.md)                   | The tiers, what was cut, and a traceability table against every line of the brief |
+| [02-requirements.md](./02-requirements.md)     | Numbered functional requirements and business rules                               |
+| [03-domain-and-api.md](./03-domain-and-api.md) | ERD, data model, storage, REST surface, errors, deployment, "How it scales"       |
+| [04-ux.md](./04-ux.md)                         | Screen layout, interactions, keyboard, component inventory, state ownership       |
+| [05-build-order.md](./05-build-order.md)       | Slices in build order with a cut line                                             |
 
 ## Ground rules
 

@@ -106,6 +106,7 @@ server-side checks.
 
 One `resolveUniqueName(tx, dataRoomId, parentId, name, excludeId?)` function is the single
 implementation for all write paths. The function:
+
 1. Trims the name; rejects empty, `.`, `..`, names containing `/` or `\`, names longer than 255
    characters with `INVALID_NAME`.
 2. Checks for a case-insensitive collision in `(dataRoomId, parentId)`.

@@ -14,7 +14,7 @@ export function useCreateFolder() {
       }),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', variables.parentId, 'children'] });
-      
+
       if (data.name !== variables.name) {
         toast(`Saved as ${data.name}.`);
       }
@@ -33,7 +33,7 @@ export function useRenameNode() {
       }),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', variables.parentId, 'children'] });
-      
+
       if (data.name !== variables.name) {
         toast(`Saved as ${data.name}.`);
       }
@@ -91,11 +91,16 @@ export function useUploadFiles() {
     },
     onError: (error: Error) => {
       toast.error(`Upload failed: ${error.message}`);
-    }
+    },
   });
 }
 
 export async function downloadFile(fileId: string) {
   const res = await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/download`);
+  return res.url;
+}
+
+export async function previewFile(fileId: string) {
+  const res = await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/preview`);
   return res.url;
 }

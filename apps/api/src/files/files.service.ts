@@ -60,7 +60,10 @@ export class FilesService {
       });
       return toFsNode(row as FsNodeRow);
     } catch (error) {
-      this.logger.error(`Failed to create row for file upload, deleting object ${storageKey}`, error);
+      this.logger.error(
+        `Failed to create row for file upload, deleting object ${storageKey}`,
+        error,
+      );
       await this.storage.deleteObjects([storageKey]);
       throw error;
     }
@@ -72,5 +75,13 @@ export class FilesService {
       throw new NotFoundException();
     }
     return this.storage.presignDownload(node.storageKey, node.name);
+  }
+
+  async presignPreview(principal: Principal, id: string): Promise<PresignedUrl> {
+    const node = await this.scope.resolve(principal, id);
+    if (node.type !== 'FILE' || !node.storageKey) {
+      throw new NotFoundException();
+    }
+    return this.storage.presignInline(node.storageKey, node.name, node.mimeType!);
   }
 }

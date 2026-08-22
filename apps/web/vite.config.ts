@@ -8,10 +8,10 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 const API_TARGET = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3000';
 
 export default defineConfig({
-  plugins: [TanStackRouterVite(), react(), tailwindcss()],
+  plugins: [TanStackRouterVite({ routeFileIgnorePattern: '\\.spec\\.(ts|tsx)$' }), react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   server: {

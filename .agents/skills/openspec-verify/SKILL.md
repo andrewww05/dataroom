@@ -4,7 +4,7 @@ description: Verify spec-to-code-to-test alignment for an OpenSpec change or the
 license: MIT
 metadata:
   author: dataroom
-  version: "1.0"
+  version: '1.0'
 ---
 
 Verify the quality of an OpenSpec change or the entire project. This is an **advisory** check — it reports gaps but does not block archive or apply.
@@ -21,18 +21,23 @@ Verify the quality of an OpenSpec change or the entire project. This is an **adv
 2. **Build and test**
 
    Run:
+
    ```bash
    pnpm typecheck && pnpm lint && pnpm test
    ```
+
    Report any failures verbatim. This step confirms the code compiles, lints clean, and all existing tests pass.
 
 3. **Spec ↔ Test mapping**
 
    Run the coverage mapping script:
+
    ```bash
    scripts/verify-spec-coverage.sh
    ```
+
    Or, if scoped to a change:
+
    ```bash
    scripts/verify-spec-coverage.sh --change "<name>"
    ```
@@ -80,6 +85,7 @@ Verify the quality of an OpenSpec change or the entire project. This is an **adv
 ```
 
 **Guardrails**
+
 - This is advisory only — it reports gaps but never blocks a workflow step
 - Always run all three checks (structural, build, coverage) even if one fails
 - Do not modify any files — this is a read-only verification

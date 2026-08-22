@@ -4,7 +4,7 @@ import { InvalidNameException } from '../http/api.exception';
 /**
  * Trims and validates a node name, then ensures it is unique within its parent folder.
  * If a collision exists (case-insensitive), it appends a suffix like " (2)" before the extension.
- * 
+ *
  * BR-020: One shared implementation for create, rename, upload, move and copy.
  */
 export async function resolveUniqueName(
@@ -15,7 +15,7 @@ export async function resolveUniqueName(
   excludeId?: string,
 ): Promise<string> {
   const trimmed = name.trim();
-  
+
   if (
     !trimmed ||
     trimmed === '.' ||

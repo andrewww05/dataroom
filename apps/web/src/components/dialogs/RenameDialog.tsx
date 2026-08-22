@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,12 +24,15 @@ export function RenameDialog({ open, onOpenChange, node }: RenameDialogProps) {
 
   const handleRename = () => {
     if (!name.trim() || !node || !node.parentId) return;
-    
-    renameNode.mutate({ id: node.id, parentId: node.parentId, name }, {
-      onSuccess: () => {
-        onOpenChange(false);
+
+    renameNode.mutate(
+      { id: node.id, parentId: node.parentId, name },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
       },
-    });
+    );
   };
 
   return (
@@ -33,11 +42,13 @@ export function RenameDialog({ open, onOpenChange, node }: RenameDialogProps) {
           <DialogTitle>Rename</DialogTitle>
         </DialogHeader>
         <div className="py-4">
-          <Label htmlFor="rename" className="sr-only">Name</Label>
-          <Input 
-            id="rename" 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
+          <Label htmlFor="rename" className="sr-only">
+            Name
+          </Label>
+          <Input
+            id="rename"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Name"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleRename();
@@ -51,8 +62,13 @@ export function RenameDialog({ open, onOpenChange, node }: RenameDialogProps) {
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleRename} disabled={!name.trim() || name === node?.name || renameNode.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRename}
+            disabled={!name.trim() || name === node?.name || renameNode.isPending}
+          >
             {renameNode.isPending ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>

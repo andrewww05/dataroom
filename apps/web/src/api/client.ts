@@ -16,10 +16,7 @@ export class ApiException extends Error {
   }
 }
 
-export async function fetchClient<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
+export async function fetchClient<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('jwt_token');
   const headers = new Headers(options.headers);
 
@@ -27,11 +24,7 @@ export async function fetchClient<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  if (
-    !headers.has('Content-Type') &&
-    options.body &&
-    typeof options.body === 'string'
-  ) {
+  if (!headers.has('Content-Type') && options.body && typeof options.body === 'string') {
     headers.set('Content-Type', 'application/json');
   }
 

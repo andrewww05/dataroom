@@ -1,5 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { CreateBucketCommand, HeadBucketCommand, S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import {
+  CreateBucketCommand,
+  HeadBucketCommand,
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectsCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { readEnv } from '../config/env';
@@ -98,6 +105,23 @@ export class StorageService implements OnModuleInit {
       return { url, expiresAt };
     } catch (cause) {
       this.logger.error(`presignDownload failed for ${key}`, cause);
+      throw new StorageUnavailableException();
+    }
+  }
+
+  async presignInline(key: string, filename: string, contentType: string): Promise<PresignedUrl> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentDisposition: `inline; filename="${filename}"`,
+        ResponseContentType: contentType,
+      });
+      const url = await getSignedUrl(this.client, command, { expiresIn: 300 });
+      const expiresAt = new Date(Date.now() + 300 * 1000).toISOString();
+      return { url, expiresAt };
+    } catch (cause) {
+      this.logger.error(`presignInline failed for ${key}`, cause);
       throw new StorageUnavailableException();
     }
   }

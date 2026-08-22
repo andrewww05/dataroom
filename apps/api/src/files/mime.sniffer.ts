@@ -43,12 +43,22 @@ export function sniffMimeType(buffer: Buffer, filename?: string): string | null 
   }
 
   // WebP: RIFF .... WEBP
-  if (buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
+  if (
+    buffer.length >= 12 &&
+    buffer.toString('ascii', 0, 4) === 'RIFF' &&
+    buffer.toString('ascii', 8, 12) === 'WEBP'
+  ) {
     return 'image/webp';
   }
 
   // Legacy OLE2 (doc, xls, ppt): D0 CF 11 E0
-  if (buffer.length >= 4 && buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0) {
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0xd0 &&
+    buffer[1] === 0xcf &&
+    buffer[2] === 0x11 &&
+    buffer[3] === 0xe0
+  ) {
     // We differentiate by extension because OLE2 is a container.
     // If we wanted to parse OLE2 completely it's complex, so for legacy we might trust the extension
     // if the magic matches.
@@ -60,7 +70,13 @@ export function sniffMimeType(buffer: Buffer, filename?: string): string | null 
   }
 
   // ZIP (docx, xlsx, pptx, OpenDocument): PK\x03\x04
-  if (buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04) {
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x50 &&
+    buffer[1] === 0x4b &&
+    buffer[2] === 0x03 &&
+    buffer[3] === 0x04
+  ) {
     return sniffZipContainer(buffer);
   }
 
@@ -89,10 +105,17 @@ function sniffZipContainer(buffer: Buffer): string | null {
   if (mimetypeIndex !== -1 && mimetypeIndex + 8 < buffer.length) {
     // The content comes right after the extra field. For OD, the extra field length is usually 0.
     // Let's just do a substring search for the known OD mimetypes near the 'mimetype' string.
-    const searchArea = buffer.toString('ascii', mimetypeIndex, Math.min(mimetypeIndex + 100, buffer.length));
-    if (searchArea.includes('application/vnd.oasis.opendocument.text')) return 'application/vnd.oasis.opendocument.text';
-    if (searchArea.includes('application/vnd.oasis.opendocument.spreadsheet')) return 'application/vnd.oasis.opendocument.spreadsheet';
-    if (searchArea.includes('application/vnd.oasis.opendocument.presentation')) return 'application/vnd.oasis.opendocument.presentation';
+    const searchArea = buffer.toString(
+      'ascii',
+      mimetypeIndex,
+      Math.min(mimetypeIndex + 100, buffer.length),
+    );
+    if (searchArea.includes('application/vnd.oasis.opendocument.text'))
+      return 'application/vnd.oasis.opendocument.text';
+    if (searchArea.includes('application/vnd.oasis.opendocument.spreadsheet'))
+      return 'application/vnd.oasis.opendocument.spreadsheet';
+    if (searchArea.includes('application/vnd.oasis.opendocument.presentation'))
+      return 'application/vnd.oasis.opendocument.presentation';
   }
 
   // OOXML: word/document.xml, xl/workbook.xml, ppt/presentation.xml

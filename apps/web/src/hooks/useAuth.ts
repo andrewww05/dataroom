@@ -27,13 +27,13 @@ export const useAuth = create<AuthState>((set) => ({
       set({ isInitializing: false, user: null, dataRoom: null });
       return;
     }
-    
+
     try {
       const data = await fetchClient<AuthMeResponse>('/auth/me');
-      set({ 
-        user: { id: data.id, email: data.email }, 
+      set({
+        user: { id: data.id, email: data.email },
         dataRoom: data.dataRoom,
-        isInitializing: false 
+        isInitializing: false,
       });
     } catch {
       localStorage.removeItem('jwt_token');

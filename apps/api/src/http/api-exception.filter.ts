@@ -22,7 +22,10 @@ import { ApiException, ErrorCode } from './api.exception';
 const BY_STATUS: Partial<Record<HttpStatus, { code: ErrorCode; message: string }>> = {
   [HttpStatus.UNAUTHORIZED]: { code: ErrorCode.UNAUTHENTICATED, message: 'Sign in to continue.' },
   [HttpStatus.NOT_FOUND]: { code: ErrorCode.NOT_FOUND, message: 'That does not exist.' },
-  [HttpStatus.PAYLOAD_TOO_LARGE]: { code: ErrorCode.FILE_TOO_LARGE, message: 'That file is too large.' },
+  [HttpStatus.PAYLOAD_TOO_LARGE]: {
+    code: ErrorCode.FILE_TOO_LARGE,
+    message: 'That file is too large.',
+  },
 };
 
 const INTERNAL: ApiError = {

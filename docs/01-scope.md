@@ -16,11 +16,11 @@ The brief asks to optimise, in order, for (1) UX and functionality, (2) design a
 when time runs out — never the finish on what is already in, because a half-polished feature reads
 worse than an absent one ("don't include unimplemented features").
 
-| Tier | What it is | Cost |
-| --- | --- | --- |
-| **Core** | Every functional requirement in the brief, plus a README that answers its three scaling questions and an app that runs from a clean clone | ~11 h 40 m |
-| **Polish** | Affordances that make it feel like Drive rather than a CRUD form — context menu, multi-select, cut/copy/paste, keyboard, tiles, dark theme | ~3 h |
-| **Extra credit** | The brief's own optional list, in its order: search by name, then versioning on name conflict | ~1 h 45 m |
+| Tier             | What it is                                                                                                                                 | Cost       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| **Core**         | Every functional requirement in the brief, plus a README that answers its three scaling questions and an app that runs from a clean clone  | ~11 h 40 m |
+| **Polish**       | Affordances that make it feel like Drive rather than a CRUD form — context menu, multi-select, cut/copy/paste, keyboard, tiles, dark theme | ~3 h       |
+| **Extra credit** | The brief's own optional list, in its order: search by name, then versioning on name conflict                                              | ~1 h 45 m  |
 
 Core is above the 6–8 h estimate and that is deliberate. The overrun is sharing (three slices),
 which the brief lists as required, not as stretch. Everything discretionary is below the line, not
@@ -117,65 +117,65 @@ Every row is a line from the brief. Nothing here is inferred from a different ex
 
 ### Technical requirements
 
-| From the brief | Status |
-| --- | --- |
-| Full-stack, real backend and real database, working end to end | **Core** — NestJS 11 + Postgres + Prisma, [03](./03-domain-and-api.md) |
-| Frontend: any React-based framework (they use React / TS / Tailwind / shadcn) | **Core** — Vite + React 19 + Tailwind + shadcn/ui, see [Stack decisions](#stack-decisions-against-the-brief) |
-| Backend: Node.js (they use NestJS + PostgreSQL + Prisma) | **Core** — exactly that |
-| File storage in blob storage (S3, Supabase Storage, Vercel Blob…) | **Core** — the S3 API throughout: MinIO locally, any S3-compatible bucket elsewhere, one `@aws-sdk/client-s3` code path |
-| Authentication required; a Data Room is not visible to other users unless shared | **Core** — FR-AUTH-\*, BR-010 |
-| Both frontend and backend deployed and publicly accessible | **Cut** — see [§ Cut](#cut). Replaced by FR-OPS-010 (runs from a clean clone, no host in the code) and the hosting contract in [03](./03-domain-and-api.md#running-it-somewhere-else) |
-| Data model designed for the functional requirements and to scale | **Core** — [03 § Model](./03-domain-and-api.md#model) and [03 § How it scales](./03-domain-and-api.md#how-it-scales) |
-| Edge case: uploading files with the same name | **Core** — BR-020 |
-| Edge case: deleting a folder someone is viewing through a share | **Core** — FR-SHARE-050 |
-| Granular React components | **Core** — the component inventory in [04](./04-ux.md#component-inventory) |
+| From the brief                                                                   | Status                                                                                                                                                                                |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Full-stack, real backend and real database, working end to end                   | **Core** — NestJS 11 + Postgres + Prisma, [03](./03-domain-and-api.md)                                                                                                                |
+| Frontend: any React-based framework (they use React / TS / Tailwind / shadcn)    | **Core** — Vite + React 19 + Tailwind + shadcn/ui, see [Stack decisions](#stack-decisions-against-the-brief)                                                                          |
+| Backend: Node.js (they use NestJS + PostgreSQL + Prisma)                         | **Core** — exactly that                                                                                                                                                               |
+| File storage in blob storage (S3, Supabase Storage, Vercel Blob…)                | **Core** — the S3 API throughout: MinIO locally, any S3-compatible bucket elsewhere, one `@aws-sdk/client-s3` code path                                                               |
+| Authentication required; a Data Room is not visible to other users unless shared | **Core** — FR-AUTH-\*, BR-010                                                                                                                                                         |
+| Both frontend and backend deployed and publicly accessible                       | **Cut** — see [§ Cut](#cut). Replaced by FR-OPS-010 (runs from a clean clone, no host in the code) and the hosting contract in [03](./03-domain-and-api.md#running-it-somewhere-else) |
+| Data model designed for the functional requirements and to scale                 | **Core** — [03 § Model](./03-domain-and-api.md#model) and [03 § How it scales](./03-domain-and-api.md#how-it-scales)                                                                  |
+| Edge case: uploading files with the same name                                    | **Core** — BR-020                                                                                                                                                                     |
+| Edge case: deleting a folder someone is viewing through a share                  | **Core** — FR-SHARE-050                                                                                                                                                               |
+| Granular React components                                                        | **Core** — the component inventory in [04](./04-ux.md#component-inventory)                                                                                                            |
 
 ### Folders
 
-| From the brief | Status |
-| --- | --- |
-| Create a folder and nest folders in another folder | **Core** — FR-FLDR-010 |
-| View folders and their contents, nested, with breadcrumb navigation | **Core** — FR-NAV-010/020 |
-| Update the folder name | **Core** — FR-FLDR-020 |
+| From the brief                                                                 | Status                                                                                  |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Create a folder and nest folders in another folder                             | **Core** — FR-FLDR-010                                                                  |
+| View folders and their contents, nested, with breadcrumb navigation            | **Core** — FR-NAV-010/020                                                               |
+| Update the folder name                                                         | **Core** — FR-FLDR-020                                                                  |
 | Delete a folder and its nested folders and files, warning what will be deleted | **Core** — FR-FLDR-030 + BR-030, with the real recursive counts, not "and its contents" |
 
 ### Files
 
-| From the brief | Status |
-| --- | --- |
-| Upload files (PDF is enough): multiple at once, drag-and-drop, per-file progress | **Core** — FR-FILE-010 |
-| View file in UI | **Core** — FR-VIEW-060, a full-screen viewer, not a thumbnail in a side pane |
-| Update a file's name, resolving name conflicts within a folder | **Core** — FR-FILE-030 + BR-020 |
-| Move a file to another folder | **Core** — FR-FILE-050, an explicit "Move to…" picker; drag-onto-folder and cut/paste are additions on top |
-| Delete a file | **Core** — FR-FILE-040 |
+| From the brief                                                                   | Status                                                                                                     |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Upload files (PDF is enough): multiple at once, drag-and-drop, per-file progress | **Core** — FR-FILE-010                                                                                     |
+| View file in UI                                                                  | **Core** — FR-VIEW-060, a full-screen viewer, not a thumbnail in a side pane                               |
+| Update a file's name, resolving name conflicts within a folder                   | **Core** — FR-FILE-030 + BR-020                                                                            |
+| Move a file to another folder                                                    | **Core** — FR-FILE-050, an explicit "Move to…" picker; drag-onto-folder and cut/paste are additions on top |
+| Delete a file                                                                    | **Core** — FR-FILE-040                                                                                     |
 
 ### Sharing
 
-| From the brief | Status |
-| --- | --- |
-| Share a Data Room, a folder, or a single file — read-only, including nested content | **Core** — FR-SHARE-010/030/070; the Data Room is a share target in its own right |
-| Public link mode (anyone with the link) | **Core** — FR-SHARE-020 |
-| Permissioned mode (only specific users you granted access) | **Core** — FR-SHARE-020/080, one row per grantee, plus a "Shared with me" list so a grantee is not dependent on being sent the URL |
-| The owner can revoke access | **Core** — FR-SHARE-040 |
+| From the brief                                                                      | Status                                                                                                                             |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Share a Data Room, a folder, or a single file — read-only, including nested content | **Core** — FR-SHARE-010/030/070; the Data Room is a share target in its own right                                                  |
+| Public link mode (anyone with the link)                                             | **Core** — FR-SHARE-020                                                                                                            |
+| Permissioned mode (only specific users you granted access)                          | **Core** — FR-SHARE-020/080, one row per grantee, plus a "Shared with me" list so a grantee is not dependent on being sent the URL |
+| The owner can revoke access                                                         | **Core** — FR-SHARE-040                                                                                                            |
 
 ### Deliverables
 
-| From the brief | Status |
-| --- | --- |
-| GitHub repo with a README: design decisions and setup instructions | **Core** — FR-OPS-020, and the setup is `docker compose up -d` plus `pnpm dev` |
-| A data model / ERD | **Core** — FR-OPS-020, the mermaid ERD in [03](./03-domain-and-api.md#erd) |
-| "How it scales": subtree size and item count | **Core** — FR-ACCT-020, one recursive CTE; trade-off and upgrade path in [03](./03-domain-and-api.md#how-it-scales) |
-| "How it scales": one Data Room with 100,000 files — listing, pagination, indexes | **Core** — FR-NAV-030, keyset pagination on a covering index; [03](./03-domain-and-api.md#how-it-scales) |
-| "How it scales": per-user roles (viewer/editor) without remodeling | **Core** — `Share.role` ships in the first migration defaulted to `VIEWER`, and BR-070 puts the capability check on the principal, so `EDITOR` is a branch in one guard and no schema change |
-| A note on where and how AI was used | **Core** — FR-OPS-020 |
-| Hosted URLs: deployed frontend and backend | **Cut** — nothing is hosted, so there are no URLs to give. The README says instead what a host has to provide ([03](./03-domain-and-api.md#running-it-somewhere-else)) |
+| From the brief                                                                   | Status                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub repo with a README: design decisions and setup instructions               | **Core** — FR-OPS-020, and the setup is `docker compose up -d` plus `pnpm dev`                                                                                                               |
+| A data model / ERD                                                               | **Core** — FR-OPS-020, the mermaid ERD in [03](./03-domain-and-api.md#erd)                                                                                                                   |
+| "How it scales": subtree size and item count                                     | **Core** — FR-ACCT-020, one recursive CTE; trade-off and upgrade path in [03](./03-domain-and-api.md#how-it-scales)                                                                          |
+| "How it scales": one Data Room with 100,000 files — listing, pagination, indexes | **Core** — FR-NAV-030, keyset pagination on a covering index; [03](./03-domain-and-api.md#how-it-scales)                                                                                     |
+| "How it scales": per-user roles (viewer/editor) without remodeling               | **Core** — `Share.role` ships in the first migration defaulted to `VIEWER`, and BR-070 puts the capability check on the principal, so `EDITOR` is a branch in one guard and no schema change |
+| A note on where and how AI was used                                              | **Core** — FR-OPS-020                                                                                                                                                                        |
+| Hosted URLs: deployed frontend and backend                                       | **Cut** — nothing is hosted, so there are no URLs to give. The README says instead what a host has to provide ([03](./03-domain-and-api.md#running-it-somewhere-else))                       |
 
 ### Extra credit
 
-| From the brief | Status |
-| --- | --- |
-| Search and filtering by file name across the Data Room | **Extra credit** — FR-SRCH-010/020, first item after Core |
-| File versioning on name conflicts | **Extra credit** — FR-VER-\*, BR-080; until it exists, BR-020 renames |
+| From the brief                                         | Status                                                                |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| Search and filtering by file name across the Data Room | **Extra credit** — FR-SRCH-010/020, first item after Core             |
+| File versioning on name conflicts                      | **Extra credit** — FR-VER-\*, BR-080; until it exists, BR-020 renames |
 
 ## Stack decisions against the brief
 
@@ -183,12 +183,12 @@ The repo baseline is Turborepo + Vite/React 19 + NestJS 11 + a shared types pack
 else: `apps/web` has `react` and `react-dom` as its only dependencies. So every UI library below is
 a decision being made now, not a constraint inherited from the repo.
 
-| Brief | Here | Why |
-| --- | --- | --- |
-| React / TypeScript / Tailwind / shadcn | Tailwind v4 + shadcn/ui | Nothing is installed yet, so matching their stack costs the same as not matching it. shadcn is copy-in components over Radix, so the design is ours to control — which is what criterion 2 is grading — and dark mode is CSS variables rather than a second theme algorithm. |
-| NestJS + PostgreSQL + Prisma | Kept | Exactly the brief's backend. |
-| Blob storage of your choice | MinIO locally, any S3-compatible bucket elsewhere | One S3 code path: `@aws-sdk/client-s3` and every presigned URL behave identically against MinIO, S3, R2 or B2. Local development needs no cloud account, and moving to a hosted bucket changes four env vars and no code. |
-| "We recommend Vercel for the frontend" | No host is chosen | `apps/web` is a static Vite build, so anything that serves files will do — including Vercel, if that is what you want. Picking for you would only add an account to the setup. See [§ Cut](#cut). |
-| — (deployment target for the API is unspecified) | No host is chosen, but the shape is constrained | Uploads stream through Nest so BR-040 can validate real bytes, and a serverless function caps request bodies far below the 100 MB limit — so wherever the API runs, it needs a persistent process. That is the one hosting constraint the code imposes, and it is recorded in [03 § Running it somewhere else](./03-domain-and-api.md#running-it-somewhere-else). |
-| Google social auth *or* email/password | Email + password (argon2) | One less OAuth client to configure per environment, and the brief accepts either. |
-| Off-the-shelf boilerplates and AI tools are allowed | Used, and written down | FR-OPS-020's AI note is a deliverable, not a footnote. |
+| Brief                                               | Here                                              | Why                                                                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React / TypeScript / Tailwind / shadcn              | Tailwind v4 + shadcn/ui                           | Nothing is installed yet, so matching their stack costs the same as not matching it. shadcn is copy-in components over Radix, so the design is ours to control — which is what criterion 2 is grading — and dark mode is CSS variables rather than a second theme algorithm.                                                                                      |
+| NestJS + PostgreSQL + Prisma                        | Kept                                              | Exactly the brief's backend.                                                                                                                                                                                                                                                                                                                                      |
+| Blob storage of your choice                         | MinIO locally, any S3-compatible bucket elsewhere | One S3 code path: `@aws-sdk/client-s3` and every presigned URL behave identically against MinIO, S3, R2 or B2. Local development needs no cloud account, and moving to a hosted bucket changes four env vars and no code.                                                                                                                                         |
+| "We recommend Vercel for the frontend"              | No host is chosen                                 | `apps/web` is a static Vite build, so anything that serves files will do — including Vercel, if that is what you want. Picking for you would only add an account to the setup. See [§ Cut](#cut).                                                                                                                                                                 |
+| — (deployment target for the API is unspecified)    | No host is chosen, but the shape is constrained   | Uploads stream through Nest so BR-040 can validate real bytes, and a serverless function caps request bodies far below the 100 MB limit — so wherever the API runs, it needs a persistent process. That is the one hosting constraint the code imposes, and it is recorded in [03 § Running it somewhere else](./03-domain-and-api.md#running-it-somewhere-else). |
+| Google social auth _or_ email/password              | Email + password (argon2)                         | One less OAuth client to configure per environment, and the brief accepts either.                                                                                                                                                                                                                                                                                 |
+| Off-the-shelf boilerplates and AI tools are allowed | Used, and written down                            | FR-OPS-020's AI note is a deliverable, not a footnote.                                                                                                                                                                                                                                                                                                            |

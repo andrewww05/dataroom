@@ -11,12 +11,12 @@ interface ListingToolbarProps {
   onDelete: (node: FsNode) => void;
 }
 
-export function ListingToolbar({ 
+export function ListingToolbar({
   selectedNodes = [],
   onCreateFolder,
   onUploadFiles,
   onRename,
-  onDelete
+  onDelete,
 }: ListingToolbarProps) {
   const singleSelected = selectedNodes.length === 1 ? selectedNodes[0] : null;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,13 +40,7 @@ export function ListingToolbar({
         <Upload className="h-4 w-4 mr-2" />
         Upload files
       </Button>
-      <input 
-        type="file" 
-        multiple 
-        hidden 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
-      />
+      <input type="file" multiple hidden ref={fileInputRef} onChange={handleFileChange} />
 
       {singleSelected && (
         <Button size="sm" variant="outline" onClick={() => onRename(singleSelected)}>

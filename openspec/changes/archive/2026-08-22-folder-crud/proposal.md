@@ -12,6 +12,7 @@ Slice 5 of `docs/05-build-order.md`. Delivers `FR-FLDR-010`, `FR-FLDR-020`, `FR-
 the shared name-suffixing logic (`BR-020`).
 
 **API — `apps/api`:**
+
 - `POST /nodes/folders` — create a folder under a given parent; `FsNode` response.
 - `PATCH /nodes/:id` — rename any node; enforces `INVALID_NAME`; suffixes on conflict.
 - `DELETE /nodes/:id` — delete a node and its whole subtree; fetches storage keys first then
@@ -20,6 +21,7 @@ the shared name-suffixing logic (`BR-020`).
   write path — never a second implementation elsewhere.
 
 **Web — `apps/web`:**
+
 - **New folder** — toolbar button opens `NewFolderDialog`; on success the listing and tree
   invalidate and the new row is selected; toast shows actual name if suffixed.
 - **Rename** — F2 / toolbar / double-click on `NodeNameCell` opens inline rename or
@@ -30,10 +32,12 @@ the shared name-suffixing logic (`BR-020`).
 ## Capabilities
 
 ### New Capabilities
+
 - `folders`: Create, rename, and delete folders, including the BR-020 suffixing helper and the
   BR-030 stats-preflight delete dialog.
 
 ### Modified Capabilities
+
 - `navigation`: `NodeNameCell` gains inline-rename affordance (F2 key handler, blur-to-cancel);
   `ListingToolbar` gains New-folder, Rename and Delete buttons — requirement changes to
   `FR-NAV-040` toolbar contents.

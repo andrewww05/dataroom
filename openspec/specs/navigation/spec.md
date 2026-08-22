@@ -169,10 +169,12 @@ the word "Root" and never a stored copy of that name that can fall behind a rena
 The client application must display the current path in the folder hierarchy as interactive breadcrumbs.
 
 #### Scenario: FR-NAV-020 Breadcrumbs rendering
+
 - **WHEN** the user navigates into a nested folder
 - **THEN** the UI displays breadcrumbs reflecting the path from the root to the current folder.
 
 #### Scenario: FR-NAV-020 Breadcrumb interaction
+
 - **WHEN** the user clicks an ancestor folder in the breadcrumb trail
 - **THEN** the application navigates to that folder's view.
 
@@ -232,6 +234,7 @@ of opening an item.
 ### Requirement: BR-020 name-conflict toast
 
 After a create or rename that results in a suffixed name (BR-020), the UI shows a toast:
+
 > Saved as **Q1 (2)**.
 
 The newly created or renamed node is scrolled into view and selected.

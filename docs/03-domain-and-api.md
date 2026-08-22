@@ -165,7 +165,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX "node_name_trgm" ON "Node" USING gin ("name" gin_trgm_ops);
 ```
 
-A unique violation on either index surfaces from Prisma as `P2002` naming the *fields*, not the
+A unique violation on either index surfaces from Prisma as `P2002` naming the _fields_, not the
 index — `("dataRoomId", "parentId", lower(name::text))` against `("dataRoomId")` — which is how the
 two are told apart when handling BR-020's auto-rename.
 
@@ -278,12 +278,12 @@ blob-first ordering possible. With versioning (extra credit) the key gains a thi
   persistent process (see [Running it somewhere else](#running-it-somewhere-else)). Presigned
   direct-to-bucket uploads are the change to make when throughput matters more than synchronous
   validation, and they are also what makes 100 MB free.
-- **Download and preview** redirect to a presigned `GetObject` URL valid for 5 minutes —
+- **Download and preview** return a `200` JSON payload with a presigned `GetObject` URL valid for 5 minutes —
   download with `response-content-disposition=attachment`, preview with `inline`. Bytes never
-  pass through Nest. FR-VIEW-060 renders the inline URL in an `<iframe>`, which is a navigation
+  pass through Nest. The payload is `200` rather than a `302` redirect because an `<iframe>` navigation (for preview) or a bare `<a>` navigation (for download) carries no `Authorization` header, meaning the server cannot authenticate a direct browser navigation to the API endpoint (FR-VIEW-060). FR-VIEW-060 renders the inline URL in an `<iframe>`, which is a navigation
   rather than a `fetch`, so the bucket needs no CORS rule; it would if the viewer ever moved to
   pdf.js or the client ever `PUT` directly.
-- **Copy** *(Polish)* is `CopyObject` server-side (FR-FILE-060).
+- **Copy** _(Polish)_ is `CopyObject` server-side (FR-FILE-060).
 - **Delete** is `DeleteObjects`, batched a thousand keys at a time, after the row is gone.
 
 ## API
@@ -294,32 +294,32 @@ Everything under `/api` (the `API_PREFIX` in `packages/shared`). All routes requ
 `@Public()` escape, so a route added without an annotation is closed rather than open. **Tier**
 marks what is Core.
 
-| Method | Path | Body / query | Returns | Tier |
-| --- | --- | --- | --- | --- |
-| POST | `/auth/signup` | `{ email, password }` | `{ token, user, dataRoom }` | Core |
-| POST | `/auth/login` | `{ email, password }` | `{ token, user, dataRoom }` | Core |
-| GET | `/auth/me` | — | `{ id, email, dataRoom: { id, name, rootId } }` | Core |
-| PATCH | `/data-rooms/:id` | `{ name }` | `DataRoom` | Core |
-| GET | `/nodes/:id` | — | `FsNode` | Core |
-| GET | `/nodes/:id/children` | `?cursor&limit&type` | `{ items: FsNode[], nextCursor }` | Core |
-| GET | `/nodes/:id/path` | — | `Breadcrumb[]`, shared root or Data Room first | Core |
-| GET | `/nodes/:id/stats` | — | `{ folders, files, bytes }` | Core |
-| POST | `/nodes/folders` | `{ parentId, name }` | `FsNode` | Core |
-| PATCH | `/nodes/:id` | `{ name }` | `FsNode` | Core |
-| POST | `/nodes/move` | `{ ids: string[], targetId }` | `FsNode[]` | Core |
-| DELETE | `/nodes/:id` | — | `204` | Core |
-| POST | `/files` | multipart: `parentId`, `file` | `FsNode` | Core |
-| GET | `/files/:id/download` | — | `302` to a presigned attachment URL | Core |
-| GET | `/files/:id/preview` | — | `302` to a presigned inline URL | Core |
-| POST | `/shares` | `{ nodeId, mode, granteeEmail?, expiresAt? }` | `Share` | Core |
-| GET | `/nodes/:id/shares` | — | `NodeShares` | Core |
-| DELETE | `/shares/:id` | — | `204` | Core |
-| GET | `/shares/resolve` | `?token` | `{ node, mode, role, rootNodeId, ownerEmail }` — the only route a share token may call unscoped | Core |
-| GET | `/shares/received` | — | `ReceivedShare[]` (FR-SHARE-080) | Core |
-| GET | `/health` | — | `{ status, uptimeSeconds }` | Core |
-| POST | `/nodes/copy` | `{ ids: string[], targetId }` | `FsNode[]` | Polish |
-| GET | `/data-rooms/:id/usage` | — | `{ bytes, files }` | Polish |
-| GET | `/search` | `?q` | `{ items: SearchHit[] }` | Extra |
+| Method | Path                    | Body / query                                  | Returns                                                                                         | Tier   |
+| ------ | ----------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------ |
+| POST   | `/auth/signup`          | `{ email, password }`                         | `{ token, user, dataRoom }`                                                                     | Core   |
+| POST   | `/auth/login`           | `{ email, password }`                         | `{ token, user, dataRoom }`                                                                     | Core   |
+| GET    | `/auth/me`              | —                                             | `{ id, email, dataRoom: { id, name, rootId } }`                                                 | Core   |
+| PATCH  | `/data-rooms/:id`       | `{ name }`                                    | `DataRoom`                                                                                      | Core   |
+| GET    | `/nodes/:id`            | —                                             | `FsNode`                                                                                        | Core   |
+| GET    | `/nodes/:id/children`   | `?cursor&limit&type`                          | `{ items: FsNode[], nextCursor }`                                                               | Core   |
+| GET    | `/nodes/:id/path`       | —                                             | `Breadcrumb[]`, shared root or Data Room first                                                  | Core   |
+| GET    | `/nodes/:id/stats`      | —                                             | `{ folders, files, bytes }`                                                                     | Core   |
+| POST   | `/nodes/folders`        | `{ parentId, name }`                          | `FsNode`                                                                                        | Core   |
+| PATCH  | `/nodes/:id`            | `{ name }`                                    | `FsNode`                                                                                        | Core   |
+| POST   | `/nodes/move`           | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Core   |
+| DELETE | `/nodes/:id`            | —                                             | `204`                                                                                           | Core   |
+| POST   | `/files`                | multipart: `parentId`, `file`                 | `FsNode`                                                                                        | Core   |
+| GET    | `/files/:id/download`   | Download a file                               | `200` `PresignedUrl`                                                                            | Core   |
+| GET    | `/files/:id/preview`    | Preview a file in the browser (FR-VIEW-060)*  | `200` `PresignedUrl`                                                                            | Core   |
+| POST   | `/shares`               | `{ nodeId, mode, granteeEmail?, expiresAt? }` | `Share`                                                                                         | Core   |
+| GET    | `/nodes/:id/shares`     | —                                             | `NodeShares`                                                                                    | Core   |
+| DELETE | `/shares/:id`           | —                                             | `204`                                                                                           | Core   |
+| GET    | `/shares/resolve`       | `?token`                                      | `{ node, mode, role, rootNodeId, ownerEmail }` — the only route a share token may call unscoped | Core   |
+| GET    | `/shares/received`      | —                                             | `ReceivedShare[]` (FR-SHARE-080)                                                                | Core   |
+| GET    | `/health`               | —                                             | `{ status, uptimeSeconds }`                                                                     | Core   |
+| POST   | `/nodes/copy`           | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Polish |
+| GET    | `/data-rooms/:id/usage` | —                                             | `{ bytes, files }`                                                                              | Polish |
+| GET    | `/search`               | `?q`                                          | `{ items: SearchHit[] }`                                                                        | Extra  |
 
 Move and copy take arrays because FR-FILE-070 acts on a selection; each item resolves its own
 name conflict under BR-020, and the response carries the names actually used.
@@ -331,10 +331,10 @@ affordances removed rather than a second implementation of the same screens.
 
 ### Principals
 
-| Header | Principal | Capabilities | Sees |
-| --- | --- | --- | --- |
-| `Authorization: Bearer <jwt>` | `{ kind: 'owner', userId }` | `read`, `write` | every Data Room they own |
-| `Authorization: Share <token>` | `{ kind: 'share', shareId, role, rootNodeId, dataRoomId }` | `read` (`role = VIEWER`) | the shared subtree only |
+| Header                         | Principal                                                  | Capabilities             | Sees                     |
+| ------------------------------ | ---------------------------------------------------------- | ------------------------ | ------------------------ |
+| `Authorization: Bearer <jwt>`  | `{ kind: 'owner', userId }`                                | `read`, `write`          | every Data Room they own |
+| `Authorization: Share <token>` | `{ kind: 'share', shareId, role, rootNodeId, dataRoomId }` | `read` (`role = VIEWER`) | the shared subtree only  |
 
 Handlers ask the principal for a capability, never for the header or the role name. That indirection
 is BR-070 and it is the whole of the brief's viewer/editor question: `EDITOR` adds `write` to one
@@ -355,32 +355,69 @@ export interface FsNode {
   parentId: string | null;
   type: NodeType;
   name: string;
-  sizeBytes: number | null;     // BigInt serialised as a number; 100 MB is far inside 2^53
+  sizeBytes: number | null; // BigInt serialised as a number; 100 MB is far inside 2^53
   mimeType: string | null;
-  createdAt: string;            // ISO 8601
+  createdAt: string; // ISO 8601
   updatedAt: string;
 }
 
-export interface AuthUser { id: string; email: string }
-export interface DataRoom { id: string; name: string; rootId: string }
-export interface AuthResponse { token: string; user: AuthUser; dataRoom: DataRoom }
-export interface ApiError { code: string; message: string; details?: Record<string, string[]> }
-export interface Breadcrumb { id: string; name: string }
-export interface NodeStats { folders: number; files: number; bytes: number }
-export interface Page<T> { items: T[]; nextCursor: string | null }
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+export interface DataRoom {
+  id: string;
+  name: string;
+  rootId: string;
+}
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+  dataRoom: DataRoom;
+}
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, string[]>;
+}
+export interface Breadcrumb {
+  id: string;
+  name: string;
+}
+export interface NodeStats {
+  folders: number;
+  files: number;
+  bytes: number;
+}
+export interface Page<T> {
+  items: T[];
+  nextCursor: string | null;
+}
 
 export interface Share {
-  id: string; nodeId: string; token: string; mode: ShareMode; role: ShareRole;
-  granteeEmail: string | null; expiresAt: string | null; createdAt: string;
+  id: string;
+  nodeId: string;
+  token: string;
+  mode: ShareMode;
+  role: ShareRole;
+  granteeEmail: string | null;
+  expiresAt: string | null;
+  createdAt: string;
 }
 export interface NodeShares {
   own: Share[];
-  inheritedFrom: Breadcrumb | null;   // the nearest shared ancestor, for FR-SHARE-060
+  inheritedFrom: Breadcrumb | null; // the nearest shared ancestor, for FR-SHARE-060
 }
 export interface ReceivedShare {
-  token: string; node: FsNode; ownerEmail: string; role: ShareRole; createdAt: string;
+  token: string;
+  node: FsNode;
+  ownerEmail: string;
+  role: ShareRole;
+  createdAt: string;
 }
-export interface SearchHit extends FsNode { path: Breadcrumb[] }   // extra credit
+export interface SearchHit extends FsNode {
+  path: Breadcrumb[];
+} // extra credit
 ```
 
 `formatBytes` and `API_PREFIX` stay as they are.
@@ -411,16 +448,20 @@ join. The migration backfills one `FileVersion` per existing file and copies the
 `onDelete: Cascade` is what makes FR-VER-040 free; only the blobs need collecting first, and that
 query now reads `FileVersion.storageKey`.
 
-| Method | Path | Body / query | Returns |
-| --- | --- | --- | --- |
-| POST | `/files/:id/versions` | multipart: `file` | `FsNode` with the new `currentVersionId` |
-| GET | `/files/:id/versions` | — | `FileVersion[]`, newest first |
-| GET | `/files/:id/versions/:v/download` | — | `302` to a presigned URL |
-| POST | `/files/:id/versions/:v/restore` | — | `FsNode` (FR-VER-030) |
+| Method | Path                              | Body / query      | Returns                                  |
+| ------ | --------------------------------- | ----------------- | ---------------------------------------- |
+| POST   | `/files/:id/versions`             | multipart: `file` | `FsNode` with the new `currentVersionId` |
+| GET    | `/files/:id/versions`             | —                 | `FileVersion[]`, newest first            |
+| GET    | `/files/:id/versions/:v/download` | —                 | `302` to a presigned URL                 |
+| POST   | `/files/:id/versions/:v/restore`  | —                 | `FsNode` (FR-VER-030)                    |
 
 ```ts
 export interface FileVersion {
-  id: string; version: number; sizeBytes: number; mimeType: string; createdAt: string;
+  id: string;
+  version: number;
+  sizeBytes: number;
+  mimeType: string;
+  createdAt: string;
 }
 ```
 
@@ -429,22 +470,22 @@ export interface FileVersion {
 One envelope, from a global exception filter: `{ "code": "...", "message": "...", "details"?: {} }`.
 The `code` is what the UI switches on; the `message` is what the toast shows.
 
-| Code | HTTP | When |
-| --- | --- | --- |
-| `UNAUTHENTICATED` | 401 | Missing, malformed or expired token |
-| `INVALID_CREDENTIALS` | 401 | Wrong email or password |
-| `EMAIL_TAKEN` | 409 | Sign-up on an existing email |
-| `NOT_FOUND` | 404 | Unknown node, room or share — or one the principal has no claim on (BR-010) |
-| `INVALID_NAME` | 400 | Empty, too long, or contains `/` `\` `.` `..` |
-| `INVALID_MOVE` | 400 | Folder moved into itself or a descendant; target is not a folder |
-| `FILE_TOO_LARGE` | 413 | Over 100 MB (BR-040) |
-| `UNSUPPORTED_TYPE` | 415 | Sniffed MIME type not in the allow list (BR-040) |
-| `TOO_MANY_FILES` | 400 | Over 20 files in one batch |
-| `VALIDATION_FAILED` | 400 | `ValidationPipe` rejected the DTO; `details` carries the fields |
-| `STORAGE_UNAVAILABLE` | 502 | The bucket refused or timed out — the client may retry (BR-050) |
-| `READ_ONLY` | 403 | A share principal called a mutating route (BR-070) |
-| `SIGN_IN_REQUIRED` | 401 | A `RESTRICTED` link opened by nobody — see below |
-| `INTERNAL` | 500 | Nothing above matched. Generic message, no stack trace, SQL, path or library name in the body; the cause and its stack go to the log instead |
+| Code                  | HTTP | When                                                                                                                                         |
+| --------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UNAUTHENTICATED`     | 401  | Missing, malformed or expired token                                                                                                          |
+| `INVALID_CREDENTIALS` | 401  | Wrong email or password                                                                                                                      |
+| `EMAIL_TAKEN`         | 409  | Sign-up on an existing email                                                                                                                 |
+| `NOT_FOUND`           | 404  | Unknown node, room or share — or one the principal has no claim on (BR-010)                                                                  |
+| `INVALID_NAME`        | 400  | Empty, too long, or contains `/` `\` `.` `..`                                                                                                |
+| `INVALID_MOVE`        | 400  | Folder moved into itself or a descendant; target is not a folder                                                                             |
+| `FILE_TOO_LARGE`      | 413  | Over 100 MB (BR-040)                                                                                                                         |
+| `UNSUPPORTED_TYPE`    | 415  | Sniffed MIME type not in the allow list (BR-040)                                                                                             |
+| `TOO_MANY_FILES`      | 400  | Over 20 files in one batch                                                                                                                   |
+| `VALIDATION_FAILED`   | 400  | `ValidationPipe` rejected the DTO; `details` carries the fields                                                                              |
+| `STORAGE_UNAVAILABLE` | 502  | The bucket refused or timed out — the client may retry (BR-050)                                                                              |
+| `READ_ONLY`           | 403  | A share principal called a mutating route (BR-070)                                                                                           |
+| `SIGN_IN_REQUIRED`    | 401  | A `RESTRICTED` link opened by nobody — see below                                                                                             |
+| `INTERNAL`            | 500  | Nothing above matched. Generic message, no stack trace, SQL, path or library name in the body; the cause and its stack go to the log instead |
 
 A code exists once a route can produce it, so the table above is the whole set and each slice adds
 its own rows to the filter (BR-100). `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `EMAIL_TAKEN`,
@@ -453,7 +494,7 @@ its own rows to the filter (BR-100). `UNAUTHENTICATED`, `INVALID_CREDENTIALS`, `
 Name collisions produce no error: BR-020 renames and reports the name used.
 
 The one place BR-010's indistinguishability bends is `SIGN_IN_REQUIRED`. A `RESTRICTED` link
-opened by an anonymous visitor has to say *something*, or the intended recipient has no way to
+opened by an anonymous visitor has to say _something_, or the intended recipient has no way to
 know they need to sign in — so it admits a link exists without naming what is behind it. Once
 signed in as the wrong person, it is a flat `404` again.
 
@@ -463,24 +504,24 @@ Every value that depends on the environment is here, with a local default that m
 `docker compose`. Nothing in this column set is host-specific, which is what makes FR-OPS-010's
 "configuration, not a code change" true.
 
-| Variable | Local default | Elsewhere | Used for |
-| --- | --- | --- | --- |
-| `PORT` | `3000` | whatever the host injects | Nest listener |
-| `CORS_ORIGIN` | `http://localhost:5173` | the origin serving the web app | Browser access to the API |
-| `DATABASE_URL` | `postgresql://dataroom:dataroom@localhost:5432/dataroom` | the Postgres URL, pooled if the provider offers one | Prisma at runtime, via the pg driver adapter |
-| `DIRECT_URL` | same as above | an **unpooled** Postgres URL | The Prisma CLI (`migrate deploy`), which cannot run through a pooler; read in `prisma.config.ts` |
-| `JWT_SECRET` | `dev-only-not-a-secret` in `.env.example`, **no default in code** | 32+ random bytes, per environment | Token signing. A process without it refuses to start (BR-100) |
-| `JWT_EXPIRES_IN` | `7d` | `7d` | FR-AUTH-020 |
-| `S3_ENDPOINT` | `http://localhost:9000` | the bucket's S3 endpoint, reachable **by the browser** | MinIO or any S3-compatible store |
-| `S3_REGION` | `us-east-1` | whatever the store wants (`auto` for some) | SDK signing |
-| `S3_BUCKET` | `dataroom` | `dataroom` | Blob bucket |
-| `S3_ACCESS_KEY` / `S3_SECRET_KEY` | `minioadmin` / `minioadmin` | the store's key pair | Credentials |
-| `S3_FORCE_PATH_STYLE` | `true` | `true` for MinIO, `false` for most hosted stores | Addressing style |
-| `MAX_FILE_BYTES` | `104857600` | `104857600` | BR-040 |
-| `MAX_VERSIONS` | `20` | `20` | BR-080 (extra credit) |
-| `PUBLIC_BASE_URL` | `http://localhost:5173` | the origin serving the web app | Building `/s/{token}` links |
-| `SEED_DEMO_EMAIL` / `SEED_DEMO_PASSWORD` | unset | set once, if a demo account is wanted | FR-OPS-030's demo account |
-| `VITE_API_URL` (web) | unset — the Vite proxy handles `/api` | `https://<api-host>/api` | Where the browser sends requests |
+| Variable                                 | Local default                                                     | Elsewhere                                              | Used for                                                                                         |
+| ---------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `PORT`                                   | `3000`                                                            | whatever the host injects                              | Nest listener                                                                                    |
+| `CORS_ORIGIN`                            | `http://localhost:5173`                                           | the origin serving the web app                         | Browser access to the API                                                                        |
+| `DATABASE_URL`                           | `postgresql://dataroom:dataroom@localhost:5432/dataroom`          | the Postgres URL, pooled if the provider offers one    | Prisma at runtime, via the pg driver adapter                                                     |
+| `DIRECT_URL`                             | same as above                                                     | an **unpooled** Postgres URL                           | The Prisma CLI (`migrate deploy`), which cannot run through a pooler; read in `prisma.config.ts` |
+| `JWT_SECRET`                             | `dev-only-not-a-secret` in `.env.example`, **no default in code** | 32+ random bytes, per environment                      | Token signing. A process without it refuses to start (BR-100)                                    |
+| `JWT_EXPIRES_IN`                         | `7d`                                                              | `7d`                                                   | FR-AUTH-020                                                                                      |
+| `S3_ENDPOINT`                            | `http://localhost:9000`                                           | the bucket's S3 endpoint, reachable **by the browser** | MinIO or any S3-compatible store                                                                 |
+| `S3_REGION`                              | `us-east-1`                                                       | whatever the store wants (`auto` for some)             | SDK signing                                                                                      |
+| `S3_BUCKET`                              | `dataroom`                                                        | `dataroom`                                             | Blob bucket                                                                                      |
+| `S3_ACCESS_KEY` / `S3_SECRET_KEY`        | `minioadmin` / `minioadmin`                                       | the store's key pair                                   | Credentials                                                                                      |
+| `S3_FORCE_PATH_STYLE`                    | `true`                                                            | `true` for MinIO, `false` for most hosted stores       | Addressing style                                                                                 |
+| `MAX_FILE_BYTES`                         | `104857600`                                                       | `104857600`                                            | BR-040                                                                                           |
+| `MAX_VERSIONS`                           | `20`                                                              | `20`                                                   | BR-080 (extra credit)                                                                            |
+| `PUBLIC_BASE_URL`                        | `http://localhost:5173`                                           | the origin serving the web app                         | Building `/s/{token}` links                                                                      |
+| `SEED_DEMO_EMAIL` / `SEED_DEMO_PASSWORD` | unset                                                             | set once, if a demo account is wanted                  | FR-OPS-030's demo account                                                                        |
+| `VITE_API_URL` (web)                     | unset — the Vite proxy handles `/api`                             | `https://<api-host>/api`                               | Where the browser sends requests                                                                 |
 
 `docker-compose.yml` runs `postgres:17` and `minio/minio` and nothing else; the bucket is created on
 API boot if it is missing, so there is no manual setup step. Apps run on the host with `pnpm dev`.
@@ -496,12 +537,12 @@ platform ever refuses to build it.
 clean clone (FR-OPS-010) and carries no vendor in its code, so whoever wants it on a server chooses
 where. What follows is the contract such a host has to satisfy — not a decision about which one.
 
-| Piece | What it needs | Why |
-| --- | --- | --- |
-| `apps/web` | Anything that serves static files | It is a static Vite build. `VITE_API_URL` points at the API origin, so the dev-only `/api` proxy has no counterpart to go wrong. |
-| `apps/api` | A **persistent** Node process | Uploads stream through Nest so BR-040 can validate sniffed bytes. A serverless function caps the request body far below 100 MB, so the API cannot be one without giving up server-side validation. |
-| Postgres | Any Postgres 17 | `DATABASE_URL` at runtime, `DIRECT_URL` for `prisma migrate deploy` — the same split works whether or not a pooler is in front. |
-| Blobs | Any S3-compatible bucket, private | The MinIO code path is the only code path; every read is a presigned URL. |
+| Piece      | What it needs                     | Why                                                                                                                                                                                                |
+| ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web` | Anything that serves static files | It is a static Vite build. `VITE_API_URL` points at the API origin, so the dev-only `/api` proxy has no counterpart to go wrong.                                                                   |
+| `apps/api` | A **persistent** Node process     | Uploads stream through Nest so BR-040 can validate sniffed bytes. A serverless function caps the request body far below 100 MB, so the API cannot be one without giving up server-side validation. |
+| Postgres   | Any Postgres 17                   | `DATABASE_URL` at runtime, `DIRECT_URL` for `prisma migrate deploy` — the same split works whether or not a pooler is in front.                                                                    |
+| Blobs      | Any S3-compatible bucket, private | The MinIO code path is the only code path; every read is a presigned URL.                                                                                                                          |
 
 Four things that break only once it is not all on one machine, all cheap to get right up front:
 
@@ -580,7 +621,10 @@ for the token or the role name**:
 
 ```ts
 type Capability = 'read' | 'write';
-const CAPABILITIES: Record<ShareRole, Capability[]> = { VIEWER: ['read'], EDITOR: ['read', 'write'] };
+const CAPABILITIES: Record<ShareRole, Capability[]> = {
+  VIEWER: ['read'],
+  EDITOR: ['read', 'write'],
+};
 ```
 
 So `EDITOR` is one entry in that map plus letting the DTO accept it. Mutating handlers already assert

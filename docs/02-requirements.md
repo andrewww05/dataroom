@@ -13,92 +13,92 @@ in tier order, so everything up to the Polish heading is required.
 
 ## Auth
 
-| ID | Requirement |
-| --- | --- |
-| FR-AUTH-010 | A visitor signs up with email and password. Email is unique, lowercased. Password is at least 8 characters, stored as an argon2 hash — never in plaintext, never in a log. |
-| FR-AUTH-020 | Sign-in returns a JWT valid for 7 days. The client sends it as `Authorization: Bearer`. No refresh token. |
-| FR-AUTH-030 | Every route except `/auth/*`, `/shares/resolve` and `/health` requires a valid token; a missing or expired one gives `401`. |
-| FR-AUTH-040 | Sign-out is client-side: drop the token and clear the query cache. |
+| ID          | Requirement                                                                                                                                                                               |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-AUTH-010 | A visitor signs up with email and password. Email is unique, lowercased. Password is at least 8 characters, stored as an argon2 hash — never in plaintext, never in a log.                |
+| FR-AUTH-020 | Sign-in returns a JWT valid for 7 days. The client sends it as `Authorization: Bearer`. No refresh token.                                                                                 |
+| FR-AUTH-030 | Every route except `/auth/*`, `/shares/resolve` and `/health` requires a valid token; a missing or expired one gives `401`.                                                               |
+| FR-AUTH-040 | Sign-out is client-side: drop the token and clear the query cache.                                                                                                                        |
 | FR-AUTH-050 | Sign-up creates the user, their Data Room and that room's root folder in one transaction, so every user has exactly one room, every room exactly one root, and every other node a parent. |
 
 ## Data Room
 
-| ID | Requirement |
-| --- | --- |
-| FR-ROOM-010 | A Data Room has a name, shown wherever the brief's "top-level folder or drive" would be — the breadcrumb head, the tree head, the share dialog. It defaults to `<email local part>'s Data Room` and is renamable in place. Nothing in the UI ever says "Root". |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-ROOM-010 | A Data Room has a name, shown wherever the brief's "top-level folder or drive" would be — the breadcrumb head, the tree head, the share dialog. It defaults to `<email local part>'s Data Room` and is renamable in place. Nothing in the UI ever says "Root".                                                              |
 | FR-ROOM-020 | The model allows a user several Data Rooms; the app creates and shows exactly one, and no UI creates a second. This is the seam the brief's scaling questions are asked across — every node, index and query is scoped by `dataRoomId`, not by `ownerId` — but an unbuilt room switcher is not shown as a disabled control. |
-| FR-ROOM-030 | Opening a Data Room, folder or file that does not exist, or that the caller has no principal for, shows the same "not found" screen (BR-010). |
+| FR-ROOM-030 | Opening a Data Room, folder or file that does not exist, or that the caller has no principal for, shows the same "not found" screen (BR-010).                                                                                                                                                                               |
 
 ## Navigation
 
-| ID | Requirement |
-| --- | --- |
+| ID         | Requirement                                                                                                                                                                                                                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-NAV-010 | The sidebar shows the folder tree, rooted at the Data Room. Children load when a node is expanded, not before. Expanded state survives navigation within the session. The same component is the folder picker in FR-FLDR-040 and FR-FILE-050, which is why it is Core rather than Polish. |
-| FR-NAV-020 | Breadcrumbs show the path from the Data Room to the open folder, each segment a link. The open folder is the URL (`/f/$folderId`; `/` redirects to the room's `rootId` from `GET /auth/me`), so back, forward, reload and a pasted link all land in the same place. |
-| FR-NAV-030 | A listing is fetched one page at a time (default 100 rows) with a cursor, and the next page loads as the user scrolls. Sort is folders-first, then name ascending — the same order the cursor walks. |
-| FR-NAV-040 | A listing has an explicit empty state (New folder + Upload), a skeleton loading state that does not shift layout, and an inline error state with Retry (BR-050). |
+| FR-NAV-020 | Breadcrumbs show the path from the Data Room to the open folder, each segment a link. The open folder is the URL (`/f/$folderId`; `/` redirects to the room's `rootId` from `GET /auth/me`), so back, forward, reload and a pasted link all land in the same place.                       |
+| FR-NAV-030 | A listing is fetched one page at a time (default 100 rows) with a cursor, and the next page loads as the user scrolls. Sort is folders-first, then name ascending — the same order the cursor walks.                                                                                      |
+| FR-NAV-040 | A listing has an explicit empty state (New folder + Upload), a skeleton loading state that does not shift layout, and an inline error state with Retry (BR-050).                                                                                                                          |
 
 ## Folders
 
-| ID | Requirement |
-| --- | --- |
-| FR-FLDR-010 | Create a folder inside the open folder, or inside any folder picked in the tree. Nesting is unlimited in the model; the UI caps new paths at 32 levels to keep breadcrumbs sane. |
-| FR-FLDR-020 | Rename a folder in place. BR-020 applies. |
-| FR-FLDR-030 | Delete a folder. Before deleting, the app asks the server how much is inside and shows it: "Delete **Q3 Diligence**? This removes 4 folders and 37 files (112 MB). This cannot be undone." Confirm deletes the whole subtree and the blobs under it. |
+| ID          | Requirement                                                                                                                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-FLDR-010 | Create a folder inside the open folder, or inside any folder picked in the tree. Nesting is unlimited in the model; the UI caps new paths at 32 levels to keep breadcrumbs sane.                                                                                      |
+| FR-FLDR-020 | Rename a folder in place. BR-020 applies.                                                                                                                                                                                                                             |
+| FR-FLDR-030 | Delete a folder. Before deleting, the app asks the server how much is inside and shows it: "Delete **Q3 Diligence**? This removes 4 folders and 37 files (112 MB). This cannot be undone." Confirm deletes the whole subtree and the blobs under it.                  |
 | FR-FLDR-040 | Move a folder into another folder, from the same "Move to…" picker as FR-FILE-050. Moving a folder into itself or into one of its own descendants is rejected (`INVALID_MOVE`) and the picker disables those rows rather than letting the user find out from a toast. |
 
 ## Files
 
-| ID | Requirement |
-| --- | --- |
-| FR-FILE-010 | Upload one or many files at once, by button or by dropping them on the listing or on a tree folder. Each file gets its own progress row with a percentage and a cancel button. One failure does not abort the others. |
-| FR-FILE-020 | Download a file — the browser navigates to a short-lived presigned URL, so bytes never round-trip through the API. |
-| FR-FILE-030 | Rename a file. The extension is preserved unless the user deliberately changes it. BR-020 applies. |
-| FR-FILE-040 | Delete a file, after a confirm, together with its blob. |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-FILE-010 | Upload one or many files at once, by button or by dropping them on the listing or on a tree folder. Each file gets its own progress row with a percentage and a cancel button. One failure does not abort the others.                                                                                                                                                                      |
+| FR-FILE-020 | Download a file — the browser navigates to a short-lived presigned URL, so bytes never round-trip through the API.                                                                                                                                                                                                                                                                         |
+| FR-FILE-030 | Rename a file. The extension is preserved unless the user deliberately changes it. BR-020 applies.                                                                                                                                                                                                                                                                                         |
+| FR-FILE-040 | Delete a file, after a confirm, together with its blob.                                                                                                                                                                                                                                                                                                                                    |
 | FR-FILE-050 | Move files and folders to another folder through a "Move to…" dialog: the FR-NAV-010 tree as a picker, with the current parent and every invalid target disabled, and a Move button that reports where things landed. Dragging an item onto a folder does the same thing; the dialog exists because drag is not discoverable and does not work from the keyboard. BR-020 applies per item. |
 
 ## Viewing
 
-| ID | Requirement |
-| --- | --- |
-| FR-VIEW-020 | Selecting exactly one item opens the details pane: name, kind, size, created, modified, the active shares (FR-SHARE-060), and for a folder its recursive stats (FR-ACCT-020). Files show a small preview that opens the viewer on click; other types show a type icon. |
-| FR-ACCT-020 | The details pane for a folder shows its recursive size and item count, computed on the server with one recursive query. The BR-030 delete dialog reads the same endpoint, which is why this is Core rather than Polish. |
+| ID          | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-VIEW-020 | Selecting exactly one item opens the details pane: name, kind, size, created, modified, the active shares (FR-SHARE-060), and for a folder its recursive stats (FR-ACCT-020). Files show a small preview that opens the viewer on click; other types show a type icon.                                                                                                                                                                                                                                                                         |
+| FR-ACCT-020 | The details pane for a folder shows its recursive size and item count, computed on the server with one recursive query. The BR-030 delete dialog reads the same endpoint, which is why this is Core rather than Polish.                                                                                                                                                                                                                                                                                                                        |
 | FR-VIEW-060 | **View a file in the UI.** Double-click, Enter or clicking the preview opens a full-screen viewer over the listing: PDFs rendered at full width in an `<iframe>` on the presigned inline URL, images fitted to the viewport, anything else an icon plus a Download button. The viewer has the file name, a Download action, a close button, `Esc` to close, and `←` / `→` to step through the other files in the same folder without going back to the listing. Downloading is a button inside the viewer, never the result of opening a file. |
 
 ## Sharing
 
-| ID | Requirement |
-| --- | --- |
-| FR-SHARE-010 | The owner shares the Data Room, any folder, or any single file as a link `/s/{token}`, where the token is 32 bytes of URL-safe randomness. A share may carry an expiry; without one it lasts until revoked. Sharing the Data Room is a share on its root node — the same row, the same code path, and the dialog says "this Data Room" rather than the folder name. |
-| FR-SHARE-020 | Two modes, per the brief. **Public** — anyone holding the link. **Restricted** — the link only opens for a signed-in user whose email matches the share's `granteeEmail`. Several people means several rows, so revoking one does not touch the others. |
-| FR-SHARE-030 | A share grants read only, and the server enforces it: a request authenticated by a share token is rejected on every mutating route, not merely denied a button (BR-070). |
-| FR-SHARE-040 | The owner revokes a share by deleting it. The link stops working on the next request — there is no grace window and no cached token to outlive it. |
+| ID           | Requirement                                                                                                                                                                                                                                                                                                                                                                |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-SHARE-010 | The owner shares the Data Room, any folder, or any single file as a link `/s/{token}`, where the token is 32 bytes of URL-safe randomness. A share may carry an expiry; without one it lasts until revoked. Sharing the Data Room is a share on its root node — the same row, the same code path, and the dialog says "this Data Room" rather than the folder name.        |
+| FR-SHARE-020 | Two modes, per the brief. **Public** — anyone holding the link. **Restricted** — the link only opens for a signed-in user whose email matches the share's `granteeEmail`. Several people means several rows, so revoking one does not touch the others.                                                                                                                    |
+| FR-SHARE-030 | A share grants read only, and the server enforces it: a request authenticated by a share token is rejected on every mutating route, not merely denied a button (BR-070).                                                                                                                                                                                                   |
+| FR-SHARE-040 | The owner revokes a share by deleting it. The link stops working on the next request — there is no grace window and no cached token to outlive it.                                                                                                                                                                                                                         |
 | FR-SHARE-050 | If the shared node is deleted or moved out from under a viewer, their next request returns `404` and the viewer sees "This folder was removed by its owner" instead of an error. Detection is on the next request; nothing is pushed. The listing refetches on window focus, so a viewer who leaves the tab open and comes back sees the message rather than a stale tree. |
-| FR-SHARE-060 | The details pane lists the active shares on the selected node — mode, grantee, created, expiry — each with a Copy link and a Revoke action. A node inside a shared subtree says so, and names the shared ancestor, so the owner is never surprised by inherited access. |
-| FR-SHARE-070 | A share on a folder or Data Room exposes that node's whole subtree, browsable with the same listing, breadcrumbs and viewer as the owner's view, minus every write affordance. Breadcrumbs stop at the shared root; nothing above it is nameable. |
-| FR-SHARE-080 | A signed-in user sees the restricted shares granted to their email in a "Shared with me" list — item name, owner, mode, granted at — each opening the shared view. Without it a grantee who loses the email has no route back in, and the owner has no way to hand over access other than pasting a URL. |
+| FR-SHARE-060 | The details pane lists the active shares on the selected node — mode, grantee, created, expiry — each with a Copy link and a Revoke action. A node inside a shared subtree says so, and names the shared ancestor, so the owner is never surprised by inherited access.                                                                                                    |
+| FR-SHARE-070 | A share on a folder or Data Room exposes that node's whole subtree, browsable with the same listing, breadcrumbs and viewer as the owner's view, minus every write affordance. Breadcrumbs stop at the shared root; nothing above it is nameable.                                                                                                                          |
+| FR-SHARE-080 | A signed-in user sees the restricted shares granted to their email in a "Shared with me" list — item name, owner, mode, granted at — each opening the shared view. Without it a grantee who loses the email has no route back in, and the owner has no way to hand over access other than pasting a URL.                                                                   |
 
 ## Delivery
 
-| ID | Requirement |
-| --- | --- |
-| FR-OPS-010 | The app runs end to end from a clean clone with no cloud account: `docker compose up -d` for Postgres and the blob store, `pnpm install`, one migration command, `pnpm dev`. Nothing in the code names a host or a vendor — every environment-dependent value is an env var with a local default ([03 § Configuration](./03-domain-and-api.md#configuration)), so putting it on a server is configuration, not a code change. |
+| ID         | Requirement                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-OPS-010 | The app runs end to end from a clean clone with no cloud account: `docker compose up -d` for Postgres and the blob store, `pnpm install`, one migration command, `pnpm dev`. Nothing in the code names a host or a vendor — every environment-dependent value is an env var with a local default ([03 § Configuration](./03-domain-and-api.md#configuration)), so putting it on a server is configuration, not a code change.                                                                |
 | FR-OPS-020 | The root README carries: the design decisions and their trade-offs, setup instructions that work from a clean clone, the ERD, the three "How it scales" answers ([03 § How it scales](./03-domain-and-api.md#how-it-scales)), a note on where and how AI was used, and what any host has to provide to run it ([03 § Running it somewhere else](./03-domain-and-api.md#running-it-somewhere-else)). It replaces the current boilerplate README, including its `/api/documents` demo section. |
-| FR-OPS-030 | A seeded demo account (credentials in the README) opens onto a populated Data Room — a few nested folders, a handful of PDFs, one active public share — so the app can be assessed without signing up and uploading first. The seed is idempotent and refuses to touch a database where that email already exists with different data. |
+| FR-OPS-030 | A seeded demo account (credentials in the README) opens onto a populated Data Room — a few nested folders, a handful of PDFs, one active public share — so the app can be assessed without signing up and uploading first. The seed is idempotent and refuses to touch a database where that email already exists with different data.                                                                                                                                                       |
 
 # Polish
 
 Built only after Core is green and demonstrable end to end.
 
-| ID | Requirement |
-| --- | --- |
-| FR-VIEW-010 | List and tiles views, toggled from the toolbar, remembered in `localStorage`. List shows name, size, type, modified; tiles show an icon, name and size. Core ships the list; tiles are the Polish half. |
-| FR-VIEW-030 | Every action reachable from the toolbar is also on the right-click context menu, and the menu only offers what the current selection allows. |
-| FR-VIEW-040 | Keyboard: arrows move, Enter opens, Backspace goes up, F2 renames, Delete deletes, Ctrl+A selects all, Ctrl+X/C/V cut/copy/paste, Esc clears or closes, `/` focuses search. |
-| FR-VIEW-050 | Light and dark themes, following the OS by default, overridable from the header, remembered. One CSS variable set drives Tailwind and every shadcn component. |
+| ID          | Requirement                                                                                                                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-VIEW-010 | List and tiles views, toggled from the toolbar, remembered in `localStorage`. List shows name, size, type, modified; tiles show an icon, name and size. Core ships the list; tiles are the Polish half.                                                               |
+| FR-VIEW-030 | Every action reachable from the toolbar is also on the right-click context menu, and the menu only offers what the current selection allows.                                                                                                                          |
+| FR-VIEW-040 | Keyboard: arrows move, Enter opens, Backspace goes up, F2 renames, Delete deletes, Ctrl+A selects all, Ctrl+X/C/V cut/copy/paste, Esc clears or closes, `/` focuses search.                                                                                           |
+| FR-VIEW-050 | Light and dark themes, following the OS by default, overridable from the header, remembered. One CSS variable set drives Tailwind and every shadcn component.                                                                                                         |
 | FR-FILE-060 | Copy / paste duplicates the selection into the target. A copied folder copies its whole subtree. Blobs are copied server-side (S3 `CopyObject`), never downloaded and re-uploaded. If this ships partially it does not ship at all — no disabled menu entry (BR-100). |
-| FR-FILE-070 | Multi-select with click, Ctrl+click, Shift+click and Ctrl+A. Delete, move and download act on the whole selection. |
-| FR-ACCT-010 | The sidebar footer shows total bytes stored and total file count for the Data Room. |
+| FR-FILE-070 | Multi-select with click, Ctrl+click, Shift+click and Ctrl+A. Delete, move and download act on the whole selection.                                                                                                                                                    |
+| FR-ACCT-010 | The sidebar footer shows total bytes stored and total file count for the Data Room.                                                                                                                                                                                   |
 
 # Extra credit
 
@@ -107,19 +107,19 @@ files is unusable without it.
 
 ## Search
 
-| ID | Requirement |
-| --- | --- |
+| ID          | Requirement                                                                                                                                                                                                           |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-SRCH-010 | The search box filters the whole Data Room by case-insensitive substring on name, debounced 300 ms, capped at 50 results. Each result shows its parent path and clicking it opens that folder with the item selected. |
-| FR-SRCH-020 | Clearing the box returns to the folder that was open before the search. |
+| FR-SRCH-020 | Clearing the box returns to the folder that was open before the search.                                                                                                                                               |
 
 ## Versioning
 
-| ID | Requirement |
-| --- | --- |
+| ID         | Requirement                                                                                                                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-VER-010 | Uploading a file whose name already exists in the target folder offers two choices: **Keep both**, which is BR-020's rename and stays the default, or **Save as a new version** of the existing file. |
-| FR-VER-020 | The details pane for a file lists its versions newest first — number, size, uploaded at — and any version can be downloaded. |
-| FR-VER-030 | Restoring an old version copies it forward as a new newest version. Nothing is rewritten and nothing is lost (BR-080). |
-| FR-VER-040 | Deleting a file deletes every version and every blob behind it. All versions count toward the storage total in FR-ACCT-010, and the pane says so — a 10 MB file with four versions is 40 MB. |
+| FR-VER-020 | The details pane for a file lists its versions newest first — number, size, uploaded at — and any version can be downloaded.                                                                          |
+| FR-VER-030 | Restoring an old version copies it forward as a new newest version. Nothing is rewritten and nothing is lost (BR-080).                                                                                |
+| FR-VER-040 | Deleting a file deletes every version and every blob behind it. All versions count toward the storage total in FR-ACCT-010, and the pane says so — a 10 MB file with four versions is 40 MB.          |
 
 ---
 
@@ -175,7 +175,7 @@ becomes a second capability set in this one guard, which is the whole of the bri
 viewer/editor question — no schema change, no new tables, no re-modelled sharing. The UI shows no
 role picker until there is a second role to pick.
 
-**BR-080 — Versions are append-only.** *(Extra credit.)* A new version increments `version` within
+**BR-080 — Versions are append-only.** _(Extra credit.)_ A new version increments `version` within
 the file and becomes `currentVersionId`; existing rows and blobs are never mutated or reordered.
 Restore appends rather than rewinds, so the history after restoring v1 over v3 reads v1, v2, v3, v4 —
 where v4 is v1's bytes. The cap is 20 versions per file; past that the oldest is dropped, blob

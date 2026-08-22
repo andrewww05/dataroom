@@ -26,12 +26,19 @@ export class NodesController {
   }
 
   @Post('folders')
-  createFolder(@CurrentPrincipal() principal: Principal, @Body() dto: CreateFolderDto): Promise<FsNode> {
+  createFolder(
+    @CurrentPrincipal() principal: Principal,
+    @Body() dto: CreateFolderDto,
+  ): Promise<FsNode> {
     return this.nodes.createFolder(principal, dto);
   }
 
   @Patch(':id')
-  renameNode(@CurrentPrincipal() principal: Principal, @Param('id') id: string, @Body() dto: RenameNodeDto): Promise<FsNode> {
+  renameNode(
+    @CurrentPrincipal() principal: Principal,
+    @Param('id') id: string,
+    @Body() dto: RenameNodeDto,
+  ): Promise<FsNode> {
     return this.nodes.renameNode(principal, id, dto);
   }
 

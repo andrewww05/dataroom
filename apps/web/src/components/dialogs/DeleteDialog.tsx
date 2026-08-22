@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useDeleteNode, useNodeStats } from '@/hooks/useNodes';
 import type { FsNode } from '@dataroom/shared';
@@ -29,8 +35,8 @@ function DeleteImpact({ nodeId }: DeleteImpactProps) {
 
   return (
     <p className="text-sm text-muted-foreground mt-4">
-      This removes {stats.folders} folder{stats.folders === 1 ? '' : 's'} and {stats.files} file{stats.files === 1 ? '' : 's'} ({formatBytes(stats.bytes)}).
-      This cannot be undone.
+      This removes {stats.folders} folder{stats.folders === 1 ? '' : 's'} and {stats.files} file
+      {stats.files === 1 ? '' : 's'} ({formatBytes(stats.bytes)}). This cannot be undone.
     </p>
   );
 }
@@ -43,16 +49,19 @@ interface DeleteDialogProps {
 
 export function DeleteDialog({ open, onOpenChange, node }: DeleteDialogProps) {
   const deleteNode = useDeleteNode();
-  
+
   const { isLoading: statsLoading } = useNodeStats(node?.id || '', open && !!node);
 
   const handleDelete = () => {
     if (!node) return;
-    deleteNode.mutate({ id: node.id, parentId: node.parentId, ancestorId: node.parentId || undefined }, {
-      onSuccess: () => {
-        onOpenChange(false);
+    deleteNode.mutate(
+      { id: node.id, parentId: node.parentId, ancestorId: node.parentId || undefined },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
       },
-    });
+    );
   };
 
   return (
@@ -68,7 +77,7 @@ export function DeleteDialog({ open, onOpenChange, node }: DeleteDialogProps) {
             </p>
           )}
           {node && open && <DeleteImpact nodeId={node.id} />}
-          
+
           {deleteNode.isError && (
             <p className="text-sm text-destructive mt-4">
               {deleteNode.error instanceof Error ? deleteNode.error.message : 'Error deleting item'}
@@ -76,10 +85,12 @@ export function DeleteDialog({ open, onOpenChange, node }: DeleteDialogProps) {
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button 
-            variant="destructive" 
-            onClick={handleDelete} 
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
             disabled={statsLoading || deleteNode.isPending}
           >
             {deleteNode.isPending ? 'Deleting...' : 'Delete'}
