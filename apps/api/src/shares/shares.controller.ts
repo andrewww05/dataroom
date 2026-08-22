@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Header } from '@nestjs/common';
 import { SharesService } from './shares.service';
 import { CreateShareDto } from './dto/create-share.dto';
+import { ResolveShareQuery } from './dto/resolve-share.query';
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
 import { Principal } from '../auth/principal';
 import { Public } from '../auth/public.decorator';
@@ -20,9 +21,10 @@ export class SharesController {
   }
 
   @Public()
-  @Get('resolve/:token')
-  resolveShare(@Param('token') token: string) {
-    return this.shares.resolveShare(token);
+  @Get('resolve')
+  @Header('Referrer-Policy', 'no-referrer')
+  resolveShare(@Query() query: ResolveShareQuery) {
+    return this.shares.resolveShare(query.token);
   }
 
   @Get('received')

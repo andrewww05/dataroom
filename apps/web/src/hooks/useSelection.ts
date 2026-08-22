@@ -6,6 +6,7 @@ interface SelectionState {
   toggleSelect: (node: FsNode) => void;
   clearSelection: () => void;
   removeNode: (id: string) => void;
+  exclusiveSelect: (node: FsNode) => void;
 }
 
 export const useSelection = create<SelectionState>((set) => ({
@@ -20,6 +21,7 @@ export const useSelection = create<SelectionState>((set) => ({
       }
       return { selectedNodes: next };
     }),
+  exclusiveSelect: (node) => set({ selectedNodes: { [node.id]: node } }),
   clearSelection: () => set({ selectedNodes: {} }),
   removeNode: (id) =>
     set((state) => {

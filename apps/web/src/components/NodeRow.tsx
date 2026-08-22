@@ -99,14 +99,6 @@ export function NodeRow({
     }
   };
 
-  const handleNameClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isSelected && !isRenaming) {
-      enterRename();
-    } else if (!isRenaming) {
-      toggleSelect(node);
-    }
-  };
 
   const handleDragStart = (e: React.DragEvent) => {
     if (isRenaming) {
@@ -162,16 +154,6 @@ export function NodeRow({
       className={`hover:bg-muted/30 transition-colors group cursor-pointer ${
         isSelected ? 'bg-muted/30' : ''
       } ${isDragOver ? 'ring-2 ring-primary bg-muted/50' : ''}`}
-      onClick={(e) => {
-        if (
-          (e.target as HTMLElement).closest('button') ||
-          (e.target as HTMLElement).closest('div[role="checkbox"]')
-        ) {
-          return;
-        }
-        if (isRenaming) return;
-        toggleSelect(node);
-      }}
       onDoubleClick={() => {
         if (!isRenaming) onDoubleClick(node);
       }}
@@ -213,7 +195,6 @@ export function NodeRow({
         ) : (
           <span
             className="font-medium truncate flex-1"
-            onClick={handleNameClick}
           >
             {node.name}
           </span>

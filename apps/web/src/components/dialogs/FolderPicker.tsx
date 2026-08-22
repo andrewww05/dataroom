@@ -78,7 +78,7 @@ function FolderPickerItem({
 
   const { data, isLoading } = useQuery({
     queryKey: ['nodes', nodeId, 'children', 'folders'],
-    queryFn: () => fetchClient<Page<FsNode>>(`/nodes/${nodeId}/children?type=FOLDER&limit=1000`),
+    queryFn: () => fetchClient<Page<FsNode>>(`/nodes/${nodeId}/children?type=FOLDER&limit=100`),
     enabled: expanded,
   });
 
@@ -103,8 +103,13 @@ function FolderPickerItem({
   }
 
   const handleSelect = () => {
-    if (cannotSelect || !onSelect) return;
-    onSelect({ id: nodeId, name: nodeName });
+    if (cannotSelect) return;
+    if (selectedFolderId === nodeId) {
+      setExpanded(!expanded);
+    } else {
+      setExpanded(true);
+      if (onSelect) onSelect({ id: nodeId, name: nodeName });
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {

@@ -1,6 +1,6 @@
 ## 1. API — Fix resolve route and add Referrer-Policy
 
-- [ ] 1.1 In `SharesController`, change `@Get('resolve/:token')` → `@Get('resolve')` and the
+- [x] 1.1 In `SharesController`, change `@Get('resolve/:token')` → `@Get('resolve')` and the
   param decorator from `@Param('token')` → `@Query('token')` using a new `ResolveShareQuery` DTO
   (`IsString()`, `IsNotEmpty()`). Add `@Header('Referrer-Policy', 'no-referrer')` to that handler.
   Verify `GET /api/shares/resolve?token=<x>` works and the old path-segment URL 404s.
