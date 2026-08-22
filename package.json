@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
+    "verify": "turbo run typecheck lint test && openspec validate --all",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

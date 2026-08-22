@@ -54,6 +54,7 @@ pnpm build       # shared → api → web, in dependency order
 pnpm test        # Jest (api) and Vitest (web)
 pnpm typecheck   # tsc --noEmit in every package
 pnpm lint        # ESLint flat config in every package
+pnpm verify      # typecheck + lint + test + openspec validate --all
 pnpm format      # Prettier over the repo
 pnpm format:check
 pnpm clean       # removes build output
@@ -181,7 +182,11 @@ How it fits together:
   `schema-invariants.spec.ts` (BR-020, FR-AUTH-050), `listing-index.spec.ts` (the query plan),
   `jwt-auth.guard.spec.ts` (expired, forged, `alg: none`, orphaned tokens).
 - Before reporting any change complete, run `pnpm typecheck && pnpm lint && pnpm test` and paste
-  failures verbatim.
+  failures verbatim. Or use the single command: `pnpm verify`.
+- **Spec ↔ Test mapping** — run `scripts/verify-spec-coverage.sh` (or its `--change <name>` form)
+  to see which spec scenario IDs (`FR-*`, `BR-*`) have matching test references and which do not.
+  Both agents have a verify skill (`openspec-verify` for Antigravity, `/opsx:verify` for Claude
+  Code) that chains structural validation, build checks and this mapping into one advisory report.
 
 > TODO: no CI configuration exists in this repo (`.github/` is absent), so all of the above runs
 > locally only.
