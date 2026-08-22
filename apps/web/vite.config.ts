@@ -1,11 +1,19 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import path from 'path';
+import tailwindcss from '@tailwindcss/vite';
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
 
 const API_TARGET = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:3000';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [TanStackRouterVite(), react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
     port: 5173,
     proxy: {

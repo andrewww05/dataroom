@@ -8,7 +8,11 @@
     "types": ["vite/client", "node"],
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src", "vite.config.ts", "vitest.setup.ts"]
 }
