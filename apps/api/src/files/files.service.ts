@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 
-import { Principal } from '../auth/principal';
+import { Principal, assertCapability } from '../auth/principal';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { NodeScopeService } from '../nodes/node-scope.service';
@@ -26,6 +26,7 @@ export class FilesService {
     file: Express.Multer.File,
     mimeType: string,
   ): Promise<FsNode> {
+    assertCapability(principal, 'write');
     const parent = await this.scope.resolve(principal, parentId);
     if (parent.type !== 'FOLDER') {
       throw new NotFoundException();

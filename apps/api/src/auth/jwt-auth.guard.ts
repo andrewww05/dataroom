@@ -3,10 +3,12 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { firstValueFrom } from 'rxjs';
 
-import { UnauthenticatedException } from '../http/api.exception';
+import { UnauthenticatedException, SignInRequiredException, NotFoundException } from '../http/api.exception';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SharePrincipal } from './principal';
+import * as jwt from 'jsonwebtoken';
+import { readEnv } from '../config/env';
 
 /**
  * Registered as `APP_GUARD`, so every route is closed until `@Public()` opens it (FR-AUTH-030).
@@ -34,26 +36,49 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
-    if (authHeader?.startsWith('Share ')) {
-      const token = authHeader.substring(6);
-      const share = await this.prisma.share.findUnique({
-        where: { token },
-      });
+    if (authHeader?.includes('Share ')) {
+      const parts = authHeader.split(',').map((p: string) => p.trim());
+      const sharePart = parts.find((p: string) => p.startsWith('Share '));
+      const bearerPart = parts.find((p: string) => p.startsWith('Bearer '));
 
-      if (!share || (share.expiresAt && share.expiresAt < new Date())) {
-        throw new UnauthenticatedException();
+      if (sharePart) {
+        const token = sharePart.substring(6);
+        const share = await this.prisma.share.findUnique({
+          where: { token },
+        });
+
+        if (!share || (share.expiresAt && share.expiresAt < new Date())) {
+          throw new UnauthenticatedException();
+        }
+
+        if (share.mode === 'RESTRICTED') {
+          if (!bearerPart) {
+            throw new SignInRequiredException();
+          }
+          const jwtToken = bearerPart.substring(7);
+          let decoded: jwt.JwtPayload;
+          try {
+            const env = readEnv();
+            decoded = jwt.verify(jwtToken, env.jwt.secret) as jwt.JwtPayload;
+          } catch {
+            throw new SignInRequiredException();
+          }
+          if (decoded.email !== share.granteeEmail) {
+            throw new NotFoundException();
+          }
+        }
+
+        const principal: SharePrincipal = {
+          kind: 'share',
+          shareId: share.id,
+          role: share.role,
+          rootNodeId: share.nodeId,
+          dataRoomId: share.dataRoomId,
+        };
+
+        request.user = principal;
+        return true;
       }
-
-      const principal: SharePrincipal = {
-        kind: 'share',
-        shareId: share.id,
-        role: share.role,
-        rootNodeId: share.nodeId,
-        dataRoomId: share.dataRoomId,
-      };
-
-      request.user = principal;
-      return true;
     }
 
     const result = super.canActivate(context);

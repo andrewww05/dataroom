@@ -165,4 +165,72 @@ describe('JwtAuthGuard (integration)', () => {
         .expect(200);
     });
   });
+
+  describe('BR-010 RESTRICTED grantee check', () => {
+    let publicShareToken: string;
+    let restrictedShareToken: string;
+    let granteeToken: string;
+
+    // Use run-scoped email to avoid DB conflicts between consecutive test runs.
+    const granteeEmail = `grantee-${run}@example.test`;
+
+    beforeAll(async () => {
+      const me = await request(app.getHttpServer())
+        .get(url('auth/me'))
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const rootId = me.body.dataRoom.rootId;
+      const dataRoomId = me.body.dataRoom.id;
+
+      const publicShare = await prisma.share.create({
+        data: {
+          nodeId: rootId,
+          dataRoomId,
+          token: randomUUID().replace(/-/g, ''), // 32 chars
+          mode: 'PUBLIC',
+        },
+      });
+      publicShareToken = publicShare.token;
+
+      const restrictedShare = await prisma.share.create({
+        data: {
+          nodeId: rootId,
+          dataRoomId,
+          token: randomUUID().replace(/-/g, ''), // 32 chars
+          mode: 'RESTRICTED',
+          granteeEmail,
+        },
+      });
+      restrictedShareToken = restrictedShare.token;
+
+      const grantee = await request(app.getHttpServer())
+        .post(url('auth/signup'))
+        .send({ email: granteeEmail, password: 'password' })
+        .expect(201);
+      granteeToken = grantee.body.token;
+    });
+
+    it('FR-SHARE-010 FR-SHARE-020 PUBLIC share, no JWT -> admitted', async () => {
+      // FR-SHARE-010: a PUBLIC share token is admitted without a JWT (no Bearer header).
+      // FR-SHARE-020: the principal resolved from the Share token has kind 'share'.
+      const response = await get('probe/who', `Share ${publicShareToken}`).expect(200);
+      expect(response.body.kind).toBe('share');
+    });
+
+    it('anonymous caller on RESTRICTED -> 401 SIGN_IN_REQUIRED', async () => {
+      const response = await get('probe/who', `Share ${restrictedShareToken}`).expect(401);
+      expect(response.body.code).toBe('SIGN_IN_REQUIRED');
+    });
+
+    it('signed-in wrong email on RESTRICTED -> 404 NOT_FOUND', async () => {
+      const response = await get('probe/who', `Share ${restrictedShareToken}, Bearer ${token}`).expect(404);
+      expect(response.body.code).toBe('NOT_FOUND');
+    });
+
+    it('signed-in matching email on RESTRICTED -> admitted with SharePrincipal', async () => {
+      const response = await get('probe/who', `Share ${restrictedShareToken}, Bearer ${granteeToken}`).expect(200);
+      expect(response.body.kind).toBe('share');
+    });
+  });
 });

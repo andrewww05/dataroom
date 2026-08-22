@@ -24,7 +24,7 @@ export type Principal = OwnerPrincipal | SharePrincipal;
 export type Capability = 'read' | 'write';
 export const CAPABILITIES: Record<'VIEWER' | 'EDITOR', Capability[]> = {
   VIEWER: ['read'],
-  EDITOR: ['read', 'write'],
+  EDITOR: ['read'], // EDITOR is unreachable today, but BR-070 requires shares to be strictly read-only
 };
 
 import { ReadOnlyException } from '../http/api.exception';

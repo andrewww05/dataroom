@@ -7,6 +7,11 @@ import {
   UseInterceptors,
   UploadedFile,
   ParseUUIDPipe,
+  UseFilters,
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
@@ -15,17 +20,32 @@ import { FilesService } from './files.service';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
 import { assertCapability, Principal } from '../auth/principal';
-import { UnsupportedTypeException, ValidationFailedException } from '../http/api.exception';
+import { UnsupportedTypeException, ValidationFailedException, TooManyFilesException } from '../http/api.exception';
 import { sniffMimeType } from './mime.sniffer';
 import { UPLOAD_ALLOWED_MIME_TYPES } from '@dataroom/shared';
 
 const maxFileBytes = Number(process.env.MAX_FILE_BYTES || 104857600);
+
+@Catch(BadRequestException)
+export class MulterLimitFilter implements ExceptionFilter {
+  catch(exception: BadRequestException, host: ArgumentsHost) {
+    if (exception.message === 'Too many files' || exception.message === 'Unexpected field') {
+      const apiEx = new TooManyFilesException();
+      host.switchToHttp().getResponse().status(apiEx.getStatus()).json(apiEx.body);
+      return;
+    }
+    // Fall back to standard validation error for other Multer errors
+    const apiEx = new ValidationFailedException({ file: [exception.message] });
+    host.switchToHttp().getResponse().status(apiEx.getStatus()).json(apiEx.body);
+  }
+}
 
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post()
+  @UseFilters(MulterLimitFilter)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: multer.memoryStorage(),

@@ -18,6 +18,8 @@ export const ErrorCode = {
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   UNSUPPORTED_TYPE: 'UNSUPPORTED_TYPE',
   STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
+  SIGN_IN_REQUIRED: 'SIGN_IN_REQUIRED',
+  TOO_MANY_FILES: 'TOO_MANY_FILES',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -138,5 +140,21 @@ export class StorageUnavailableException extends ApiException {
 export class ReadOnlyException extends ApiException {
   constructor() {
     super(HttpStatus.FORBIDDEN, ErrorCode.READ_ONLY, 'That action requires edit access.');
+  }
+}
+
+export class SignInRequiredException extends ApiException {
+  constructor() {
+    super(
+      HttpStatus.UNAUTHORIZED,
+      ErrorCode.SIGN_IN_REQUIRED,
+      'Sign in to access this share.',
+    );
+  }
+}
+
+export class TooManyFilesException extends ApiException {
+  constructor() {
+    super(HttpStatus.BAD_REQUEST, ErrorCode.TOO_MANY_FILES, 'Over 20 files in one batch.');
   }
 }
