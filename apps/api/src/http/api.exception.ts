@@ -13,6 +13,9 @@ export const ErrorCode = {
   INVALID_NAME: 'INVALID_NAME',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   INTERNAL: 'INTERNAL',
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  UNSUPPORTED_TYPE: 'UNSUPPORTED_TYPE',
+  STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -97,3 +100,22 @@ export class InvalidNameException extends ApiException {
     super(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_NAME, 'That name is not allowed.');
   }
 }
+
+export class FileTooLargeException extends ApiException {
+  constructor() {
+    super(HttpStatus.PAYLOAD_TOO_LARGE, ErrorCode.FILE_TOO_LARGE, 'That file is too large.');
+  }
+}
+
+export class UnsupportedTypeException extends ApiException {
+  constructor() {
+    super(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_TYPE, 'That file type is not allowed.');
+  }
+}
+
+export class StorageUnavailableException extends ApiException {
+  constructor() {
+    super(HttpStatus.BAD_GATEWAY, ErrorCode.STORAGE_UNAVAILABLE, 'The storage service is temporarily unavailable.');
+  }
+}
+

@@ -58,4 +58,15 @@ describe('the environment contract', () => {
       expect(readEnv({ ...COMPLETE, JWT_EXPIRES_IN: '30m' }).jwt.expiresIn).toBe('30m');
     });
   });
+
+  describe('BR-040 upload limits are configurable', () => {
+    it('defaults maxFileBytes to 100 MB', () => {
+      expect(readEnv(COMPLETE).maxFileBytes).toBe(104857600);
+    });
+
+    it('takes the configured MAX_FILE_BYTES when one is set', () => {
+      expect(readEnv({ ...COMPLETE, MAX_FILE_BYTES: '1024' }).maxFileBytes).toBe(1024);
+    });
+  });
 });
+

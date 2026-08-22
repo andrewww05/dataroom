@@ -19,7 +19,8 @@ describe('ListingToolbar', () => {
     render(
       <ListingToolbar 
         selectedNodes={[]} 
-        onCreateFolder={vi.fn()} 
+        onCreateFolder={vi.fn()}
+        onUploadFiles={vi.fn()} 
         onRename={vi.fn()} 
         onDelete={vi.fn()} 
       />
@@ -33,7 +34,8 @@ describe('ListingToolbar', () => {
     render(
       <ListingToolbar 
         selectedNodes={[FOLDER_NODE]} 
-        onCreateFolder={vi.fn()} 
+        onCreateFolder={vi.fn()}
+        onUploadFiles={vi.fn()} 
         onRename={vi.fn()} 
         onDelete={vi.fn()} 
       />
@@ -53,7 +55,8 @@ describe('ListingToolbar', () => {
     render(
       <ListingToolbar 
         selectedNodes={[FOLDER_NODE]} 
-        onCreateFolder={vi.fn()} 
+        onCreateFolder={vi.fn()}
+        onUploadFiles={vi.fn()} 
         onRename={vi.fn()} 
         onDelete={vi.fn()} 
       />

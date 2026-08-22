@@ -15,6 +15,7 @@ import { FS_NODE_SELECT, type FsNodeRow } from './node.serializer';
 export interface ScopedNode extends FsNodeRow {
   dataRoomId: string;
   dataRoomName: string;
+  storageKey: string | null;
 }
 
 /**
@@ -36,7 +37,7 @@ export class NodeScopeService {
       // The join is the check. Asking for the row first and comparing owners afterwards would read
       // a row the caller has no claim on, and one day forget to compare.
       where: { id, dataRoom: { ownerId: principal.userId } },
-      select: { ...FS_NODE_SELECT, dataRoomId: true, dataRoom: { select: { name: true } } },
+      select: { ...FS_NODE_SELECT, storageKey: true, dataRoomId: true, dataRoom: { select: { name: true } } },
     });
 
     // A foreign node, an id no row has, and an id that cannot name a node at all are the same

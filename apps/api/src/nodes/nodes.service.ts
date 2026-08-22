@@ -1,5 +1,5 @@
 import type { Breadcrumb, FsNode, NodeStats, NodeType, Page } from '@dataroom/shared';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import type { Principal } from '../auth/principal';
 import { Prisma } from '../generated/prisma/client';
@@ -11,6 +11,7 @@ import { toFsNode, toNodeStats, type FsNodeRow, type NodeStatsRow } from './node
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { RenameNodeDto } from './dto/rename-node.dto';
 import { resolveUniqueName } from './name.helper';
+import { StorageService } from '../storage/storage.service';
 
 /** One row of the `/path` walk. `depth` counts up towards the root; the root has the highest. */
 interface AncestorRow {
@@ -64,9 +65,12 @@ export function childrenPageQuery(
 
 @Injectable()
 export class NodesService {
+  private readonly logger = new Logger(NodesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly scope: NodeScopeService,
+    private readonly storage: StorageService,
   ) {}
 
   /** Nothing more than the scope check itself: it already returns the row (BR-010). */
@@ -119,11 +123,32 @@ export class NodesService {
     const existing = await this.scope.resolve(principal, id);
     // TODO: assert 'write' capability on principal when share roles are implemented
     
+    const keys = await this.prisma.$queryRaw<{ storageKey: string }[]>`
+      WITH RECURSIVE subtree AS (
+        SELECT "id", "storageKey"
+          FROM "Node" WHERE "id" = ${existing.id} AND "dataRoomId" = ${existing.dataRoomId}
+        UNION ALL
+        SELECT n."id", n."storageKey"
+          FROM "Node" n JOIN subtree s ON n."parentId" = s."id"
+         WHERE n."dataRoomId" = ${existing.dataRoomId}
+      )
+      SELECT "storageKey" FROM subtree WHERE "storageKey" IS NOT NULL`;
+
+    const storageKeys = keys.map((k) => k.storageKey);
+
     await this.prisma.$transaction(async (tx) => {
       await tx.node.delete({
         where: { id: existing.id },
       });
     });
+
+    if (storageKeys.length > 0) {
+      try {
+        await this.storage.deleteObjects(storageKeys);
+      } catch (e) {
+        this.logger.error(`Failed to delete ${storageKeys.length} objects for node ${existing.id}`, e);
+      }
+    }
   }
 
   /**

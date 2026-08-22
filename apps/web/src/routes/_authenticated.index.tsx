@@ -1,8 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchClient } from '../api/client';
+import { useUploadFiles, downloadFile } from '../hooks/useNodes';
 import type { Page, FsNode } from '@dataroom/shared';
 import { Folder, FileText, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ function formatBytes(bytes: number | null): string {
 function Index() {
   const { dataRoom } = useAuth();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const uploadFilesMutation = useUploadFiles();
 
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [renameNode, setRenameNode] = useState<FsNode | null>(null);
@@ -60,9 +62,21 @@ function Index() {
     setSelectedIds(next);
   };
 
-  const handleRowClick = (_node: FsNode) => {
-    // Navigating into folder is part of slice 6 navigation, but I'll toggle selection for now
-    // or just don't navigate yet, the spec says "implement Folder icons".
+  const navigate = useNavigate();
+
+  const handleDoubleClick = async (node: FsNode) => {
+    if (node.type === 'FOLDER') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigate({ to: `/folders/${node.id}` as any });
+    } else {
+      try {
+        const url = await downloadFile(node.id);
+        window.location.assign(url);
+      } catch (e: unknown) {
+        // error handled by fetchClient/toast in real app or we can just console error
+        console.error('Download failed', e);
+      }
+    }
   };
 
   if (isLoading) {
@@ -120,6 +134,11 @@ function Index() {
         <ListingToolbar 
           selectedNodes={selectedNodes} 
           onCreateFolder={() => setNewFolderOpen(true)}
+          onUploadFiles={(files) => {
+            if (dataRoom?.rootId) {
+              uploadFilesMutation.mutate({ parentId: dataRoom.rootId, files });
+            }
+          }}
           onRename={(node) => setRenameNode(node)}
           onDelete={(node) => setDeleteNode(node)}
         />
@@ -164,8 +183,9 @@ function Index() {
                     if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('div[role="checkbox"]')) {
                       return;
                     }
-                    handleRowClick(node);
+                    toggleSelect(node.id);
                   }}
+                  onDoubleClick={() => handleDoubleClick(node)}
                 >
                   <td className="px-4 py-3 w-10">
                     <Checkbox 

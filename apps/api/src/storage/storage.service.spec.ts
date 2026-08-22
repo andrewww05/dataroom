@@ -1,0 +1,44 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { StorageService } from './storage.service';
+
+describe('StorageService', () => {
+  let service: StorageService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [StorageService],
+    }).compile();
+
+    service = module.get<StorageService>(StorageService);
+    await service.onModuleInit();
+  });
+
+  describe('file operations', () => {
+    it('can put, presign, and delete objects in the MinIO bucket', async () => {
+      const key = `test-room/test-node-${Date.now()}`;
+      const body = Buffer.from('test content');
+
+      // Put
+      await service.putObject(key, body, 'text/plain');
+
+      // Presign
+      const presigned = await service.presignDownload(key, 'test.txt');
+      expect(presigned.url).toContain(key);
+      expect(presigned.url).toContain('response-content-disposition=attachment');
+      expect(presigned.expiresAt).toBeDefined();
+
+      // Fetch the presigned URL to verify the PUT worked and URL works
+      const response = await fetch(presigned.url);
+      expect(response.status).toBe(200);
+      const text = await response.text();
+      expect(text).toBe('test content');
+
+      // Delete
+      await service.deleteObjects([key]);
+
+      // Fetch again to verify delete
+      const fetchAfterDelete = await fetch(presigned.url);
+      expect(fetchAfterDelete.status).toBe(404);
+    });
+  });
+});

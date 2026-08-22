@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { NodeScopeService } from './node-scope.service';
 import { NodesController } from './nodes.controller';
 import { NodesService } from './nodes.service';
+import { StorageModule } from '../storage/storage.module';
 
 /**
  * `NodeScopeService` is exported because every later slice's routes — write, upload, share — resolve
@@ -10,6 +11,7 @@ import { NodesService } from './nodes.service';
  * ownership could be got wrong.
  */
 @Module({
+  imports: [StorageModule],
   controllers: [NodesController],
   providers: [NodesService, NodeScopeService],
   exports: [NodeScopeService],

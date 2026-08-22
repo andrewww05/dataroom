@@ -67,3 +67,35 @@ export function useNodeStats(id: string, enabled = true) {
     enabled,
   });
 }
+
+export function useUploadFiles() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ parentId, files }: { parentId: string; files: FileList | File[] }) => {
+      const fileArray = Array.from(files);
+      for (const file of fileArray) {
+        const formData = new FormData();
+        formData.append('parentId', parentId);
+        formData.append('file', file);
+
+        await fetchClient<FsNode>('/files', {
+          method: 'POST',
+          body: formData as unknown as string,
+        });
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['nodes', variables.parentId, 'children'] });
+      toast.success(`Uploaded ${variables.files.length} file(s).`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Upload failed: ${error.message}`);
+    }
+  });
+}
+
+export async function downloadFile(fileId: string) {
+  const res = await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/download`);
+  return res.url;
+}

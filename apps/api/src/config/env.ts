@@ -38,6 +38,7 @@ export interface Env {
     secretKey: string;
     forcePathStyle: boolean;
   };
+  maxFileBytes: number;
 }
 
 /**
@@ -82,5 +83,6 @@ export function readEnv(source: NodeJS.ProcessEnv = process.env): Env {
       // MinIO needs path-style addressing; most hosted S3 stores do not.
       forcePathStyle: (source.S3_FORCE_PATH_STYLE ?? 'true') === 'true',
     },
+    maxFileBytes: Number(source.MAX_FILE_BYTES ?? 104857600),
   };
 }

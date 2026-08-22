@@ -2,6 +2,7 @@
   "rootDir": "..",
   "testEnvironment": "node",
   "moduleFileExtensions": ["js", "json", "ts"],
+  "setupFiles": ["dotenv/config"],
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.json" }]

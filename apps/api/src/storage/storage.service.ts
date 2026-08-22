@@ -1,7 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { CreateBucketCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import { CreateBucketCommand, HeadBucketCommand, S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { readEnv } from '../config/env';
+import { StorageUnavailableException } from '../http/api.exception';
+import type { PresignedUrl } from '@dataroom/shared';
 
 /**
  * The S3-compatible client and its bucket.
@@ -63,6 +66,62 @@ export class StorageService implements OnModuleInit {
         `Cannot create bucket "${this.bucket}" at S3_ENDPOINT=${this.env.endpoint}.`,
         { cause },
       );
+    }
+  }
+
+  async putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+        }),
+      );
+    } catch (cause) {
+      this.logger.error(`putObject failed for ${key}`, cause);
+      throw new StorageUnavailableException();
+    }
+  }
+
+  async presignDownload(key: string, filename: string): Promise<PresignedUrl> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentDisposition: `attachment; filename="${filename}"`,
+      });
+      const url = await getSignedUrl(this.client, command, { expiresIn: 300 });
+      // url includes X-Amz-Date, we can compute expiresAt
+      const expiresAt = new Date(Date.now() + 300 * 1000).toISOString();
+      return { url, expiresAt };
+    } catch (cause) {
+      this.logger.error(`presignDownload failed for ${key}`, cause);
+      throw new StorageUnavailableException();
+    }
+  }
+
+  async deleteObjects(keys: string[]): Promise<void> {
+    if (keys.length === 0) return;
+
+    // Batch a thousand keys per call
+    const batchSize = 1000;
+    for (let i = 0; i < keys.length; i += batchSize) {
+      const batch = keys.slice(i, i + batchSize);
+      try {
+        await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: {
+              Objects: batch.map((key) => ({ Key: key })),
+            },
+          }),
+        );
+      } catch (cause) {
+        this.logger.error(`deleteObjects failed for batch of ${batch.length} keys`, cause);
+        throw new StorageUnavailableException();
+      }
     }
   }
 }
