@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { FolderPlus, Pencil, Trash2, Upload } from 'lucide-react';
+import { FolderPlus, Pencil, Share2, Trash2, Upload } from 'lucide-react';
 import type { FsNode } from '@dataroom/shared';
 import { useRef } from 'react';
 
@@ -10,6 +10,7 @@ interface ListingToolbarProps {
   onRename: (node: FsNode) => void;
   onMove: (nodes: FsNode[]) => void;
   onDelete: (node: FsNode) => void;
+  onShare?: (node: FsNode) => void;
 }
 
 export function ListingToolbar({
@@ -19,6 +20,7 @@ export function ListingToolbar({
   onRename,
   onMove,
   onDelete,
+  onShare,
 }: ListingToolbarProps) {
   const singleSelected = selectedNodes.length === 1 ? selectedNodes[0] : null;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +61,13 @@ export function ListingToolbar({
         </Button>
       )}
 
+      {singleSelected && onShare && (
+        <Button size="sm" variant="outline" onClick={() => onShare(singleSelected)}>
+          <Share2 className="h-4 w-4 mr-2" />
+          Share
+        </Button>
+      )}
+
       {singleSelected && (
         <Button size="sm" variant="destructive" onClick={() => onDelete(singleSelected)}>
           <Trash2 className="h-4 w-4 mr-2" />
@@ -68,3 +77,4 @@ export function ListingToolbar({
     </div>
   );
 }
+

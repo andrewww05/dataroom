@@ -1,7 +1,16 @@
-import { FsNode } from './nodes';
+import type { Breadcrumb, FsNode } from './nodes';
 
 export type ShareMode = 'PUBLIC' | 'RESTRICTED';
 export type ShareRole = 'VIEWER' | 'EDITOR';
+
+/**
+ * What `GET /nodes/:id/shares` returns (FR-SHARE-060): direct shares on this node, plus the
+ * nearest ancestor that has at least one share (or `null`).
+ */
+export interface NodeShares {
+  own: Share[];
+  inheritedFrom: Breadcrumb | null;
+}
 
 export interface Share {
   id: string;

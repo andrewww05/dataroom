@@ -10,12 +10,14 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchClient } from '../api/client';
 import type { Breadcrumb } from '@dataroom/shared';
 import { useAuth } from '../hooks/useAuth';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, Folder, Home } from 'lucide-react';
+import { LogOut, Home, Share2 } from 'lucide-react';
 import { DetailsPane } from '@/components/DetailsPane';
 import { UploadProgressModal } from '@/components/UploadProgressModal';
 import { FolderPicker } from '@/components/dialogs/FolderPicker';
+import { ShareDialog } from '@/components/sharing/ShareDialog';
+import { SharedWithMeList } from '@/components/sharing/SharedWithMeList';
 import { useMove } from '@/hooks/useMove';
 
 function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
@@ -68,6 +70,7 @@ function AuthenticatedLayout() {
   const router = useRouter();
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
   const moveNodesMutation = useMove();
+  const [shareRoomOpen, setShareRoomOpen] = useState(false);
 
   useEffect(() => {
     initialize();
@@ -93,10 +96,7 @@ function AuthenticatedLayout() {
             <Home className="mr-2 h-4 w-4" />
             Home
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground">
-            <Folder className="mr-2 h-4 w-4" />
-            Shared with me
-          </Button>
+          <SharedWithMeList />
           <div className="pt-4 mt-4">
             <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Folders
@@ -144,6 +144,18 @@ function AuthenticatedLayout() {
         <header className="h-14 border-b flex items-center px-4 shrink-0 gap-2">
           {/* Mobile menu trigger could go here */}
           <BreadcrumbsNav dataRoomName={dataRoom?.name || 'Data Room'} />
+          <div className="ml-auto">
+            {dataRoom?.rootId && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShareRoomOpen(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+            )}
+          </div>
         </header>
 
         {/* Content list */}
@@ -154,6 +166,16 @@ function AuthenticatedLayout() {
 
       <DetailsPane />
       <UploadProgressModal />
+
+      {dataRoom?.rootId && (
+        <ShareDialog
+          open={shareRoomOpen}
+          onOpenChange={setShareRoomOpen}
+          nodeId={dataRoom.rootId}
+          nodeName={dataRoom.name}
+          isRoomRoot
+        />
+      )}
     </div>
   );
 }

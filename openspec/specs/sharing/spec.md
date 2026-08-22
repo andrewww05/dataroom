@@ -12,11 +12,10 @@ removed-by-owner screen; and Shared with me.
 ### Requirement: Owner can create a share on any node they own
 
 The owner POSTs `{ nodeId, mode, granteeEmail?, expiresAt? }` to `POST /shares` (FR-SHARE-010).
-The server generates 32 bytes of URL-safe randomness as the token, persists the share with
-`role = VIEWER`, and returns the `Share` object. Sharing the Data Room root is the same code
-path — no special case; the dialog labels it "this entire Data Room" on the client side.
+The server generates a 32-byte token and persists the share with `role = VIEWER`. 
+Sharing the root is the same code path.
 
-- `RESTRICTED` mode MUST have a `granteeEmail`; omitting it is `400 VALIDATION_FAILED`.
+- `RESTRICTED` mode MUST have a `granteeEmail`.
 - `granteeEmail` is stored lowercased.
 - A share principal (BR-070) MUST be rejected with `403 READ_ONLY`.
 
@@ -82,9 +81,9 @@ request. Only the owner of the Data Room may revoke. A share principal MUST be r
 - **WHEN** `DELETE /api/shares/:id` is called with an `Authorization: Share <token>` header
 - **THEN** the response is `403` with code `READ_ONLY`
 
-### Requirement: Resolving a share token returns the shared node and context
+### Requirement: Resolving a share token MUST return the shared node and context
 
-`GET /shares/resolve?token=<token>` is `@Public()` (FR-AUTH-030 exception). It returns
+Resolving a share token MUST return the shared node and context. `GET /shares/resolve?token=<token>` is `@Public()` (FR-AUTH-030 exception). It returns
 `{ node, mode, role, rootNodeId, ownerEmail }` for a valid, unexpired token, or `404 NOT_FOUND`
 for a missing, expired, or deleted share. A RESTRICTED share's grantee check is NOT done here
 — the check is enforced when the resolved principal calls other routes (it happens in the guard).
@@ -104,9 +103,9 @@ for a missing, expired, or deleted share. A RESTRICTED share's grantee check is 
 - **WHEN** `GET /api/shares/resolve?token=<token>` is called for a share whose `nodeId` no longer exists
 - **THEN** the response is `404` with code `NOT_FOUND`
 
-### Requirement: The shared view enforces read-only access through the principal refactor's guard
+### Requirement: The shared view MUST enforce read-only access through the principal refactor's guard
 
-`GET /nodes/:id`, `/nodes/:id/children`, `/nodes/:id/path`, `/nodes/:id/stats`,
+The shared view MUST enforce read-only access through the principal refactor's guard. `GET /nodes/:id`, `/nodes/:id/children`, `/nodes/:id/path`, `/nodes/:id/stats`,
 `GET /files/:id/download`, `GET /files/:id/preview` all work for a share principal scoped to the
 shared subtree (FR-SHARE-070, BR-070). Every mutating route is `403 READ_ONLY`.
 
@@ -118,9 +117,9 @@ API routes for the shared view — it reuses the existing listing and file route
 - **WHEN** existing read routes are called with a share token
 - **THEN** they behave as specified in the principal-refactor spec
 
-### Requirement: Deleted or expired share shows a removal screen, not an error
+### Requirement: Deleted or expired share MUST show a removal screen, not an error
 
-When a share principal's token resolves to nothing (node deleted, share revoked, or share expired),
+A deleted or expired share MUST show a removal screen, not an error. When a share principal's token resolves to nothing (node deleted, share revoked, or share expired),
 the web client shows "This folder was removed by its owner" (FR-SHARE-050). Detection is on the
 next request; the listing refetches on window focus so an idle viewer sees it on return
 (TanStack Query's `refetchOnWindowFocus`).
@@ -132,9 +131,9 @@ This is UI-only behavior. The API contract is `404 NOT_FOUND` from `GET /shares/
 - **WHEN** `GET /api/shares/resolve?token=<revoked-token>` is called after the share has been deleted
 - **THEN** the response is `404` with code `NOT_FOUND`
 
-### Requirement: Signed-in users see the restricted shares granted to their email
+### Requirement: Signed-in users MUST see the restricted shares granted to their email
 
-`GET /shares/received` returns `ReceivedShare[]` — restricted shares where `granteeEmail` matches
+Signed-in users MUST see the restricted shares granted to their email. `GET /shares/received` returns `ReceivedShare[]` — restricted shares where `granteeEmail` matches
 the authenticated user's email, ordered by `createdAt desc` (FR-SHARE-080). A share principal
 returns an empty list, not an error. An owner with no incoming shares returns `[]`.
 

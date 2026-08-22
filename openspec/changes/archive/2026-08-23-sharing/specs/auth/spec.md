@@ -1,4 +1,4 @@
-## CHANGED Requirements
+## MODIFIED Requirements
 
 ### Requirement: /shares/resolve uses a query parameter, not a path segment
 

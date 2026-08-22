@@ -1,4 +1,4 @@
-import type { Breadcrumb, FsNode, Page } from '@dataroom/shared';
+import type { Breadcrumb, FsNode, NodeShares, Page } from '@dataroom/shared';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
@@ -77,7 +77,10 @@ export class NodesController {
   }
 
   @Get(':id/shares')
-  getShares(@CurrentPrincipal() principal: Principal, @Param('id') id: string) {
+  getShares(
+    @CurrentPrincipal() principal: Principal,
+    @Param('id') id: string,
+  ): Promise<NodeShares> {
     return this.nodes.listShares(principal, id);
   }
 }

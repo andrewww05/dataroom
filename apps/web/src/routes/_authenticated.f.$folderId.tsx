@@ -14,6 +14,7 @@ import { NewFolderDialog } from '@/components/dialogs/NewFolderDialog';
 import { RenameDialog } from '@/components/dialogs/RenameDialog';
 import { DeleteDialog } from '@/components/dialogs/DeleteDialog';
 import { MoveDialog } from '@/components/dialogs/MoveDialog';
+import { ShareDialog } from '@/components/sharing/ShareDialog';
 import { useMove } from '@/hooks/useMove';
 
 import { FileViewer } from '@/components/FileViewer';
@@ -46,6 +47,7 @@ export function FolderView() {
   const [renameNode, setRenameNode] = useState<FsNode | null>(null);
   const [deleteNode, setDeleteNode] = useState<FsNode | null>(null);
   const [moveNodesList, setMoveNodesList] = useState<FsNode[]>([]);
+  const [shareNode, setShareNode] = useState<FsNode | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['nodes', folderId, 'children'],
@@ -163,6 +165,7 @@ export function FolderView() {
           onRename={(node) => setRenameNode(node)}
           onMove={(nodes) => setMoveNodesList(nodes)}
           onDelete={(node) => setDeleteNode(node)}
+          onShare={(node) => setShareNode(node)}
         />
       )}
 
@@ -256,6 +259,16 @@ export function FolderView() {
         }}
         nodesToMove={moveNodesList}
       />
+
+      {shareNode && (
+        <ShareDialog
+          open={!!shareNode}
+          onOpenChange={(open) => !open && setShareNode(null)}
+          nodeId={shareNode.id}
+          nodeName={shareNode.name}
+          isRoomRoot={shareNode.id === dataRoom?.rootId}
+        />
+      )}
 
       {activeFile && (
         <FileViewer

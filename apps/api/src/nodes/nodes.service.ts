@@ -1,4 +1,4 @@
-import type { Breadcrumb, FsNode, NodeStats, NodeType, Page, Share } from '@dataroom/shared';
+import type { Breadcrumb, FsNode, NodeShares, NodeStats, NodeType, Page, Share } from '@dataroom/shared';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { assertCapability, type Principal } from '../auth/principal';
@@ -305,14 +305,22 @@ export class NodesService {
     return toNodeStats(row);
   }
 
-  async listShares(principal: Principal, id: string): Promise<Share[]> {
+  /**
+   * Direct shares on this node, plus the nearest ancestor that also carries a share (FR-SHARE-060).
+   *
+   * The ancestor walk reuses the same recursive CTE as `/path`; for each ancestor (nearest first)
+   * it checks whether at least one Share exists. At most 32 levels (FR-FLDR-010), each a PK read.
+   */
+  async listShares(principal: Principal, id: string): Promise<NodeShares> {
+    assertCapability(principal, 'read');
     const node = await this.scope.resolve(principal, id);
+
     const shares = await this.prisma.share.findMany({
       where: { nodeId: node.id },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
-    return shares.map(share => ({
+    const own: Share[] = shares.map((share) => ({
       id: share.id,
       nodeId: share.nodeId,
       token: share.token,
@@ -322,5 +330,29 @@ export class NodesService {
       expiresAt: share.expiresAt?.toISOString() || null,
       createdAt: share.createdAt.toISOString(),
     }));
+
+    // Walk ancestors (nearest first) to find the first one with at least one share.
+    const ancestors = await this.prisma.$queryRaw<AncestorRow[]>`
+      WITH RECURSIVE ancestors AS (
+        SELECT "id", "parentId", "name", 0 AS depth
+          FROM "Node" WHERE "id" = ${node.parentId ?? ''} AND "dataRoomId" = ${node.dataRoomId}
+        UNION ALL
+        SELECT n."id", n."parentId", n."name", a.depth + 1
+          FROM "Node" n JOIN ancestors a ON n."id" = a."parentId"
+         WHERE n."dataRoomId" = ${node.dataRoomId}
+      )
+      SELECT "id", "parentId", "name", depth FROM ancestors ORDER BY depth ASC`;
+
+    let inheritedFrom: { id: string; name: string } | null = null;
+    for (const ancestor of ancestors) {
+      const count = await this.prisma.share.count({ where: { nodeId: ancestor.id } });
+      if (count > 0) {
+        inheritedFrom = { id: ancestor.id, name: ancestor.name };
+        break;
+      }
+    }
+
+    return { own, inheritedFrom };
   }
 }
+

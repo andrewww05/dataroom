@@ -57,7 +57,7 @@ describe('Core Flow (e2e)', () => {
     const shareToken = shareRes.body.token;
     const shareId = shareRes.body.id;
 
-    // 6. Access via Share token
+    // 6. FR-SHARE-070 Access via Share token (shared view uses existing routes)
     const resolveRes = await request(app.getHttpServer())
       .get(`/${API_PREFIX}/shares/resolve/${shareToken}`)
       .expect(200);

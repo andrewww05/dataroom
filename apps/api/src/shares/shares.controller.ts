@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Header } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Header } from '@nestjs/common';
 import { SharesService } from './shares.service';
 import { CreateShareDto } from './dto/create-share.dto';
 import { ResolveShareQuery } from './dto/resolve-share.query';
@@ -16,6 +16,7 @@ export class SharesController {
   }
 
   @Delete(':id')
+  @HttpCode(204)
   revokeShare(@CurrentPrincipal() principal: Principal, @Param('id') id: string) {
     return this.shares.revokeShare(principal, id);
   }

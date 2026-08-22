@@ -86,9 +86,9 @@ request. Only the owner of the Data Room may revoke. A share principal MUST be r
 
 ---
 
-### Requirement: Resolving a share token returns the shared node and context
+### Requirement: Resolving a share token MUST return the shared node and context
 
-`GET /shares/resolve?token=<token>` is `@Public()` (FR-AUTH-030 exception). It returns
+`GET /shares/resolve?token=<token>` is `@Public()` (FR-AUTH-030 exception). It MUST return
 `{ node, mode, role, rootNodeId, ownerEmail }` for a valid, unexpired token, or `404 NOT_FOUND`
 for a missing, expired, or deleted share. A RESTRICTED share's grantee check is NOT done here
 — the check is enforced when the resolved principal calls other routes (it happens in the guard).
@@ -110,21 +110,26 @@ for a missing, expired, or deleted share. A RESTRICTED share's grantee check is 
 
 ---
 
-### Requirement: The shared view enforces read-only access through the principal refactor's guard
+### Requirement: The shared view MUST enforce read-only access through the principal refactor's guard
 
 `GET /nodes/:id`, `/nodes/:id/children`, `/nodes/:id/path`, `/nodes/:id/stats`,
-`GET /files/:id/download`, `GET /files/:id/preview` all work for a share principal scoped to the
-shared subtree (FR-SHARE-070, BR-070). Every mutating route is `403 READ_ONLY`.
+`GET /files/:id/download`, `GET /files/:id/preview` all MUST work for a share principal scoped to the
+shared subtree (FR-SHARE-070, BR-070). Every mutating route MUST return `403 READ_ONLY`.
 
 These scenarios are already covered by the principal-refactor spec. This change does not add new
 API routes for the shared view — it reuses the existing listing and file routes behind the guard.
 
+#### Scenario: FR-SHARE-070 shared view API calls succeed
+
+- **WHEN** a share principal calls `GET /api/nodes/:id/children` on the shared root
+- **THEN** the response is `200`
+
 ---
 
-### Requirement: Deleted or expired share shows a removal screen, not an error
+### Requirement: Deleted or expired share MUST show a removal screen, not an error
 
 When a share principal's token resolves to nothing (node deleted, share revoked, or share expired),
-the web client shows "This folder was removed by its owner" (FR-SHARE-050). Detection is on the
+the web client MUST show "This folder was removed by its owner" (FR-SHARE-050). Detection is on the
 next request; the listing refetches on window focus so an idle viewer sees it on return
 (TanStack Query's `refetchOnWindowFocus`).
 
@@ -137,9 +142,9 @@ This is UI-only behavior. The API contract is `404 NOT_FOUND` from `GET /shares/
 
 ---
 
-### Requirement: Signed-in users see the restricted shares granted to their email
+### Requirement: Signed-in users MUST see the restricted shares granted to their email
 
-`GET /shares/received` returns `ReceivedShare[]` — restricted shares where `granteeEmail` matches
+`GET /shares/received` MUST return `ReceivedShare[]` — restricted shares where `granteeEmail` matches
 the authenticated user's email, ordered by `createdAt desc` (FR-SHARE-080). A share principal
 returns an empty list, not an error. An owner with no incoming shares returns `[]`.
 

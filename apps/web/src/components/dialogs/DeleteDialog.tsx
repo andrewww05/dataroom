@@ -10,7 +10,7 @@ import { useDelete } from '@/hooks/useDelete';
 import { useNodeStats } from '@/hooks/useNodes';
 import { useQuery } from '@tanstack/react-query';
 import { fetchClient } from '@/api/client';
-import type { FsNode } from '@dataroom/shared';
+import type { FsNode, NodeShares } from '@dataroom/shared';
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null) return '--';
@@ -29,7 +29,7 @@ function DeleteImpact({ node }: DeleteImpactProps) {
   const { data: stats, isLoading: statsLoading, isError: statsError } = useNodeStats(node.id);
   const { data: shares, isLoading: sharesLoading, isError: sharesError } = useQuery({
     queryKey: ['shares', node.id],
-    queryFn: () => fetchClient<unknown[]>(`/nodes/${node.id}/shares`),
+    queryFn: () => fetchClient<NodeShares>(`/nodes/${node.id}/shares`),
   });
 
   if (statsLoading || sharesLoading) {
@@ -47,9 +47,9 @@ function DeleteImpact({ node }: DeleteImpactProps) {
   return (
     <>
       <p className="text-sm text-muted-foreground mt-4">{text}</p>
-      {shares.length > 0 && (
+      {shares.own.length > 0 && (
         <p className="text-sm font-medium text-destructive mt-2">
-          This also revokes {shares.length} link{shares.length === 1 ? '' : 's'}.
+          This also revokes {shares.own.length} link{shares.own.length === 1 ? '' : 's'}.
         </p>
       )}
     </>
@@ -68,7 +68,7 @@ export function DeleteDialog({ open, onOpenChange, node }: DeleteDialogProps) {
   const { isLoading: statsLoading } = useNodeStats(node?.id || '', open && !!node);
   const { isLoading: sharesLoading } = useQuery({
     queryKey: ['shares', node?.id],
-    queryFn: () => fetchClient<unknown[]>(`/nodes/${node?.id}/shares`),
+    queryFn: () => fetchClient<NodeShares>(`/nodes/${node?.id}/shares`),
     enabled: open && !!node,
   });
 
