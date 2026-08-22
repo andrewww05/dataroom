@@ -192,11 +192,33 @@ denormalisation to add first if profiling ever says otherwise.
 
 ### Sorting and paging
 
-Listings are ordered `type ASC, name ASC, id ASC` — folders first, then name, with `id` making
-the tuple unique so Prisma's `cursor` + `skip: 1` is a correct keyset walk. The cursor is that
-tuple, base64-encoded, not an offset: page 500 costs the same as page 1. `name ASC` follows the
-database collation; if case-insensitive ordering matters, give the column an ICU collation in the
-migration. Default page is 100.
+Listings are ordered `type ASC, name ASC, id ASC` — folders first, then name, with `id` making the
+tuple unique. `name ASC` follows the database collation; if case-insensitive ordering matters, give
+the column an ICU collation in the migration.
+
+The cursor **is** that tuple, not an offset and not a row id: `base64url` of
+`{"t":<type>,"n":<name>,"i":<id>}`. It is opaque to the client, and a token that does not decode —
+or whose `t` is not a `NodeType` — is `400 VALIDATION_FAILED` naming `cursor`, never a silent page
+from the beginning. A page defaults to **100 rows and 100 is also the maximum**: `?limit` outside
+`1..100` is `400 VALIDATION_FAILED` naming `limit`, never a silently clamped page. Raising the cap
+is one number in `ListChildrenQuery`.
+
+The page asks for `limit + 1` rows; the extra row is what decides whether there is a next cursor,
+and it never leaves the service. So no listing pays for a count in order to know it has ended.
+
+Page 500 costs the same as page 1 only if the cursor is the scan's **start condition** rather than a
+filter over the rows before it, and that is narrower than it looks:
+
+- `("type","name","id") > ($1::"NodeType",$2,$3)` lands in `Index Cond` on
+  `Node_dataRoomId_parentId_type_name_id_idx` and opens the scan at the cursor.
+- The same predicate as an `OR` of three branches — Prisma's only form, its enum filter having no
+  `gt` — lands in `Filter` instead. Measured over a 20,000-row folder: page 190 discarded 19,001
+  index entries before its first row, at 3.0ms against 0.03ms.
+
+`GET /nodes/:id/children` is therefore the one read path written as `$queryRaw`; `BigInt` and `Date`
+still convert in the single `toFsNode` boundary. Prisma's own `cursor` + `skip: 1` is not used at
+all: it makes Postgres re-read the cursor row through correlated subselects to recover a tuple the
+token already carries.
 
 No listing shows a total count. `SELECT count(*)` over a folder is the one query in the listing path
 that cannot use the index to stop early, and "1–100 of 100,000" is not worth a full scan per page —
@@ -208,21 +230,34 @@ the details pane shows counts on demand instead (FR-ACCT-020).
 
 ```sql
 WITH RECURSIVE subtree AS (
-  SELECT id, type, size_bytes FROM "Node" WHERE id = $1 AND data_room_id = $2
+  SELECT "id", "type", "sizeBytes", 0 AS depth
+    FROM "Node" WHERE "id" = $1 AND "dataRoomId" = $2
   UNION ALL
-  SELECT n.id, n.type, n.size_bytes FROM "Node" n JOIN subtree s ON n.parent_id = s.id
+  SELECT n."id", n."type", n."sizeBytes", s.depth + 1
+    FROM "Node" n JOIN subtree s ON n."parentId" = s."id"
+   WHERE n."dataRoomId" = $2
 )
-SELECT count(*) FILTER (WHERE type = 'FOLDER') - 1 AS folders,   -- minus the node itself
-       count(*) FILTER (WHERE type = 'FILE')        AS files,
-       coalesce(sum(size_bytes), 0)                 AS bytes
+SELECT (count(*) FILTER (WHERE "type" = 'FOLDER' AND depth > 0))::int AS folders,
+       (count(*) FILTER (WHERE "type" = 'FILE'   AND depth > 0))::int AS files,
+       (coalesce(sum("sizeBytes") FILTER (WHERE depth > 0), 0))::bigint AS bytes
 FROM subtree;
 ```
 
-The same shape, seeded from the root and without the `- 1`, answers FR-ACCT-010.
+Identifiers are quoted camelCase because the schema carries no `@map` — these are the columns
+Prisma emits. `depth > 0` is what excludes the node from its own contents; `count(*) - 1` would
+report **minus one folder** for a file, which has no contents at all. The recursive term repeats
+`"dataRoomId" = $2` so the walk cannot leave the room even if a `parentId` ever pointed out of it.
+Counts are cast to `int` so the driver yields numbers; `bytes` stays `bigint` and crosses the
+boundary through the one serialiser.
+
+The same shape, seeded from the root and counting every depth, answers FR-ACCT-010.
 
 `GET /nodes/:id/path` walks the other way — child to root — for breadcrumbs, and is also the
 ancestor walk BR-070's scope check and FR-FLDR-040's cycle check use: if the move target is the node
-itself or appears in its own subtree, reject with `INVALID_MOVE`.
+itself or appears in its own subtree, reject with `INVALID_MOVE`. Its **head segment carries
+`DataRoom.name`**, read from the room on each request rather than from the root node's copy of it, so
+FR-ROOM-010's rename needs no write here and no breadcrumb can go stale. No segment is ever named
+"Root".
 
 ## Storage
 
@@ -485,7 +520,7 @@ The three questions the brief asks, answered against the model above.
 
 ### Total size and item count of a folder including its whole subtree
 
-One recursive CTE, seeded at the folder and walking `parent_id` downward — the query in
+One recursive CTE, seeded at the folder and walking `"parentId"` downward — the query in
 [Recursive stats](#recursive-stats). It is depth-independent and costs one index scan per level, so
 it is `O(nodes in the subtree)`: microseconds for a normal folder, and a real cost only at the root
 of a very large room. It is called on demand, not per row of a listing — the details pane and the

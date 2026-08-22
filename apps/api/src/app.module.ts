@@ -8,6 +8,7 @@ import { validateEnv } from './config/env';
 import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
 import { ApiExceptionFilter } from './http/api-exception.filter';
+import { NodesModule } from './nodes/nodes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 
@@ -19,6 +20,7 @@ import { StorageModule } from './storage/storage.module';
     PrismaModule,
     StorageModule,
     AuthModule,
+    NodesModule,
     HealthModule,
     DocumentsModule,
   ],

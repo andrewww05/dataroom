@@ -64,6 +64,20 @@ export class InvalidCredentialsException extends ApiException {
   }
 }
 
+/**
+ * A row the caller has no claim on, and a row that does not exist (BR-010, FR-ROOM-030).
+ *
+ * No argument to vary, exactly as `InvalidCredentialsException` takes none: the two cases must be
+ * byte-identical, or a refusal that confirmed the row existed would let the tree be mapped by
+ * guessing ids. The message is the filter's own `NOT_FOUND` row, so a `404` raised by Nest for an
+ * unrouted URL and one thrown here read the same.
+ */
+export class NotFoundException extends ApiException {
+  constructor() {
+    super(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, 'That does not exist.');
+  }
+}
+
 export class EmailTakenException extends ApiException {
   constructor() {
     super(HttpStatus.CONFLICT, ErrorCode.EMAIL_TAKEN, 'That email is already registered.');
