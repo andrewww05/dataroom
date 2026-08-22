@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createE2eApp, teardownE2eApp, createTestUser } from './e2e-helpers';
 
+// #### Scenario: FR-TEST-010 E2E Core Flow (Upload to Revoke)
 describe('Core Flow (e2e)', () => {
   let app: INestApplication;
 

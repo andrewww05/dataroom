@@ -14,6 +14,9 @@ const FOLDER_NODE: FsNode = {
   updatedAt: new Date().toISOString(),
 };
 
+// #### Scenario: FR-FILE-010 upload button visible
+// #### Scenario: FR-FILE-020 download button visible for a file selection
+// #### Scenario: FR-FLDR-020 rename button visible only with single folder selection
 describe('ListingToolbar', () => {
   it('renders New Folder button always', () => {
     render(

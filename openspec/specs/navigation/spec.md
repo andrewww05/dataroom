@@ -295,7 +295,7 @@ of opening an item.
 
 ### Requirement: BR-020 name-conflict toast
 
-After a create or rename that results in a suffixed name (BR-020), the UI shows a toast:
+After a create or rename that results in a suffixed name (BR-020), the UI MUST show a toast:
 
 > Saved as **Q1 (2)**.
 
@@ -313,7 +313,7 @@ The newly created or renamed node is scrolled into view and selected.
 
 ### Requirement: BR-030 delete dialog preflight
 
-`DeleteDialog` calls `GET /nodes/:id/stats` before enabling its confirm button. The dialog reads
+`DeleteDialog` MUST call `GET /nodes/:id/stats` before enabling its confirm button. The dialog reads
 "Delete **\\<name\\>**? This removes \\<folders\\> folders and \\<files\\> files (\\<bytes formatted\\>).
 This cannot be undone." The confirm button is disabled while the stats fetch is in flight.
 

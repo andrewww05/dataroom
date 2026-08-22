@@ -54,6 +54,8 @@ vi.mock('@/components/FileViewer', () => ({
 
 // No need to mock the module, we can just spy on the exported Route's methods
 
+// #### Scenario: FR-NAV-040 Three-pane layout structure
+// #### Scenario: FR-VIEW-010 Rendering the list view
 describe('FolderView stepping logic', () => {
   const navigateMock = vi.fn();
   

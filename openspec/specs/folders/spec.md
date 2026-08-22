@@ -10,7 +10,7 @@ It also introduces the BR-020 `resolveUniqueName` helper that every subsequent w
 
 ### Requirement: FR-FLDR-010 — Create folder
 
-The owner may create a new folder inside any folder in their Data Room. `POST /nodes/folders`
+The owner MUST be able to create a new folder inside any folder in their Data Room. `POST /nodes/folders`
 accepts `{ parentId, name }` and returns `FsNode`. The name is validated per BR-020 before
 persistence; a conflict is resolved by suffixing, and the response carries the name actually used.
 Nesting is unlimited in the model; the UI caps new folder paths at 32 levels (FR-FLDR-010).
@@ -48,7 +48,7 @@ Nesting is unlimited in the model; the UI caps new folder paths at 32 levels (FR
 
 ### Requirement: FR-FLDR-020 — Rename folder
 
-The owner may rename any folder. `PATCH /nodes/:id` accepts `{ name }` and returns the updated
+The owner MUST be able to rename any folder. `PATCH /nodes/:id` accepts `{ name }` and returns the updated
 `FsNode`. The same name-validation and BR-020 suffixing rules apply as for create. The root node
 may not be renamed (it is renamed via `PATCH /data-rooms/:id`).
 
@@ -75,7 +75,7 @@ may not be renamed (it is renamed via `PATCH /data-rooms/:id`).
 
 ### Requirement: FR-FLDR-030 — Delete folder with stats preflight
 
-The owner may delete any folder (or file). `DELETE /nodes/:id` responds `204` and cascades the
+The owner MUST be able to delete any folder (or file). `DELETE /nodes/:id` responds `204` and cascades the
 whole subtree plus all `Share` rows on every node in it. Before deleting, the client fetches
 `GET /nodes/:id/stats` and shows the real counts in the confirm dialog (BR-030). The server does
 not gate delete on the preflight having been called; authorization and existence are the only
@@ -100,7 +100,7 @@ server-side checks.
 
 ### Requirement: BR-020 — Name-uniqueness helper (shared)
 
-One `resolveUniqueName(tx, dataRoomId, parentId, name, excludeId?)` function is the single
+One `resolveUniqueName(tx, dataRoomId, parentId, name, excludeId?)` function MUST be the single
 implementation for all write paths. The function:
 
 1. Trims the name; rejects empty, `.`, `..`, names containing `/` or `\`, names longer than 255

@@ -92,6 +92,7 @@ while IFS=$'\t' read -r id title source; do
   # Search across all test file patterns
   match_file=$(grep -rl "$id" "$ROOT/apps" \
     --include='*.spec.ts' \
+    --include='*.spec.tsx' \
     --include='*.e2e-spec.ts' \
     --include='*.test.ts' \
     --include='*.test.tsx' \

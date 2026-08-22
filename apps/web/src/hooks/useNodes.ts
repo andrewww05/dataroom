@@ -100,8 +100,9 @@ export function useUploadFiles() {
             body: formData as unknown as string,
           });
           updateStatus(upload.id, 'success');
-        } catch (error: any) {
-          updateStatus(upload.id, 'error', error.message || 'Upload failed');
+        } catch (error) {
+          const e = error as Error;
+          updateStatus(upload.id, 'error', e.message || 'Upload failed');
         }
       }
     },

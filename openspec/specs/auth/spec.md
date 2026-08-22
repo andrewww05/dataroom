@@ -147,7 +147,7 @@ or its root folder "Root".
 
 ### Requirement: Sign-in and Sign-up UI
 
-The client application must provide forms for users to authenticate or create new accounts.
+The client application MUST provide forms for users to authenticate or create new accounts.
 
 #### Scenario: FR-AUTH-010 Sign-in validation and feedback
 

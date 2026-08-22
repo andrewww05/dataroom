@@ -8,7 +8,7 @@ The `ui-shell` capability defines the foundational web application layout, globa
 
 ### Requirement: Application Layout
 
-The web application must render a three-pane layout once authenticated, providing a consistent structure across routes.
+The web application MUST render a three-pane layout once authenticated, providing a consistent structure across routes.
 
 #### Scenario: FR-NAV-040 Three-pane layout structure
 
@@ -17,7 +17,7 @@ The web application must render a three-pane layout once authenticated, providin
 
 ### Requirement: Skeleton and Error States
 
-The application must handle loading and error states gracefully at the global level.
+The application MUST handle loading and error states gracefully at the global level.
 
 #### Scenario: FR-VIEW-010 Global skeleton loading
 

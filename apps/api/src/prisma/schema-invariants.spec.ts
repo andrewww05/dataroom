@@ -11,6 +11,7 @@ import { createTestClient } from './test-client';
  *
  * Requires the compose stack and an applied migration.
  */
+// #### Scenario: FR-OPS-020 migrating an empty database yields the full schema
 describe('schema invariants', () => {
   let prisma: PrismaClient;
   const userIds: string[] = [];
