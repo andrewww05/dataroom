@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useRenameNode } from '@/hooks/useNodes';
+import { useRename } from '@/hooks/useRename';
 import type { FsNode } from '@dataroom/shared';
 
 interface RenameDialogProps {
@@ -20,7 +20,7 @@ interface RenameDialogProps {
 
 export function RenameDialog({ open, onOpenChange, node }: RenameDialogProps) {
   const [name, setName] = useState(node?.name || '');
-  const renameNode = useRenameNode();
+  const renameNode = useRename();
 
   const handleRename = () => {
     if (!name.trim() || !node || !node.parentId) return;

@@ -10,6 +10,7 @@ vi.mock('@tanstack/react-query', async () => {
   const actual = await vi.importActual('@tanstack/react-query');
   return {
     ...actual,
+    useQueryClient: vi.fn(),
     useQuery: vi.fn(),
     useMutation: vi.fn(() => ({ mutate: vi.fn() })),
   };

@@ -8,6 +8,7 @@ interface ListingToolbarProps {
   onCreateFolder: () => void;
   onUploadFiles: (files: FileList | File[]) => void;
   onRename: (node: FsNode) => void;
+  onMove: (nodes: FsNode[]) => void;
   onDelete: (node: FsNode) => void;
 }
 
@@ -16,6 +17,7 @@ export function ListingToolbar({
   onCreateFolder,
   onUploadFiles,
   onRename,
+  onMove,
   onDelete,
 }: ListingToolbarProps) {
   const singleSelected = selectedNodes.length === 1 ? selectedNodes[0] : null;
@@ -47,6 +49,13 @@ export function ListingToolbar({
         <Button size="sm" variant="outline" onClick={() => onRename(singleSelected)}>
           <Pencil className="h-4 w-4 mr-2" />
           Rename
+        </Button>
+      )}
+
+      {selectedNodes.length > 0 && (
+        <Button size="sm" variant="outline" onClick={() => onMove(selectedNodes)}>
+          <FolderPlus className="h-4 w-4 mr-2" />
+          Move
         </Button>
       )}
 

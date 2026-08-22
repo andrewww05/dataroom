@@ -25,6 +25,7 @@ describe('ListingToolbar', () => {
         onCreateFolder={vi.fn()}
         onUploadFiles={vi.fn()}
         onRename={vi.fn()}
+        onMove={vi.fn()}
         onDelete={vi.fn()}
       />,
     );
@@ -40,6 +41,7 @@ describe('ListingToolbar', () => {
         onCreateFolder={vi.fn()}
         onUploadFiles={vi.fn()}
         onRename={vi.fn()}
+        onMove={vi.fn()}
         onDelete={vi.fn()}
       />,
     );
@@ -61,6 +63,7 @@ describe('ListingToolbar', () => {
         onCreateFolder={vi.fn()}
         onUploadFiles={vi.fn()}
         onRename={vi.fn()}
+        onMove={vi.fn()}
         onDelete={vi.fn()}
       />,
     );

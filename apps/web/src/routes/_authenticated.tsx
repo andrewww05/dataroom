@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { LogOut, Folder, Home } from 'lucide-react';
 import { DetailsPane } from '@/components/DetailsPane';
 import { UploadProgressModal } from '@/components/UploadProgressModal';
+import { FolderPicker } from '@/components/dialogs/FolderPicker';
+import { useMove } from '@/hooks/useMove';
 
 function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
@@ -64,6 +66,8 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   const { user, dataRoom, isInitializing, initialize, clearSession } = useAuth();
   const router = useRouter();
+  const { folderId } = useParams({ strict: false }) as { folderId?: string };
+  const moveNodesMutation = useMove();
 
   useEffect(() => {
     initialize();
@@ -93,6 +97,28 @@ function AuthenticatedLayout() {
             <Folder className="mr-2 h-4 w-4" />
             Shared with me
           </Button>
+          <div className="pt-4 mt-4">
+            <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Folders
+            </h3>
+            <FolderPicker
+              movingNodeIds={[]}
+              currentParentId={folderId || null}
+              selectedFolderId={folderId || null}
+              onSelect={(folder) => {
+                if (folder.id === dataRoom?.rootId) {
+                  router.navigate({ to: '/' });
+                } else {
+                  router.navigate({ to: '/f/$folderId', params: { folderId: folder.id } });
+                }
+              }}
+              onDropNodes={(ids, targetId) => {
+                if (folderId) {
+                  moveNodesMutation.mutate({ ids, targetId, sourceParentId: folderId });
+                }
+              }}
+            />
+          </div>
         </nav>
         <div className="p-4 border-t shrink-0">
           <div className="flex items-center justify-between mb-4">

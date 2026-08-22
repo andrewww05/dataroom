@@ -5,24 +5,20 @@ import { useAuth } from '../hooks/useAuth';
 import { fetchClient } from '../api/client';
 import { useUploadFiles } from '../hooks/useNodes';
 import type { Page, FsNode } from '@dataroom/shared';
-import { Folder, FileText, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ListingToolbar } from '@/components/ListingToolbar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { NewFolderDialog } from '@/components/dialogs/NewFolderDialog';
 import { RenameDialog } from '@/components/dialogs/RenameDialog';
 import { DeleteDialog } from '@/components/dialogs/DeleteDialog';
+import { MoveDialog } from '@/components/dialogs/MoveDialog';
+import { useMove } from '@/hooks/useMove';
 
 import { FileViewer } from '@/components/FileViewer';
-import { formatBytes } from '../lib/utils';
 import { useSelection } from '../hooks/useSelection';
+import { NodeRow } from '@/components/NodeRow';
 
 export const Route = createFileRoute('/_authenticated/f/$folderId')({
   validateSearch: (search: Record<string, unknown>): { file?: string } => {
@@ -41,12 +37,15 @@ export function FolderView() {
   const { selectedNodes, toggleSelect, clearSelection, removeNode } = useSelection();
   const selectedNodesList = Object.values(selectedNodes);
   const selectedIds = new Set(Object.keys(selectedNodes));
+  const selectedNodeIdsArray = Array.from(selectedIds);
 
   const uploadFilesMutation = useUploadFiles();
+  const moveNodesMutation = useMove();
 
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [renameNode, setRenameNode] = useState<FsNode | null>(null);
   const [deleteNode, setDeleteNode] = useState<FsNode | null>(null);
+  const [moveNodesList, setMoveNodesList] = useState<FsNode[]>([]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['nodes', folderId, 'children'],
@@ -162,6 +161,7 @@ export function FolderView() {
             }
           }}
           onRename={(node) => setRenameNode(node)}
+          onMove={(nodes) => setMoveNodesList(nodes)}
           onDelete={(node) => setDeleteNode(node)}
         />
       )}
@@ -194,82 +194,23 @@ export function FolderView() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {items.map((node) => {
-              const isSelected = selectedIds.has(node.id);
-              return (
-                <tr
-                  key={node.id}
-                  className={`hover:bg-muted/30 transition-colors group cursor-pointer ${isSelected ? 'bg-muted/30' : ''}`}
-                  onClick={(e: React.MouseEvent) => {
-                    // Prevent row click if clicking checkbox or action button
-                    if (
-                      (e.target as HTMLElement).closest('button') ||
-                      (e.target as HTMLElement).closest('div[role="checkbox"]')
-                    ) {
-                      return;
-                    }
-                    toggleSelect(node);
-                  }}
-                  onDoubleClick={() => handleDoubleClick(node)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleDoubleClick(node);
-                  }}
-                  tabIndex={0}
-                >
-                  <td className="px-4 py-3 w-10">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleSelect(node)}
-                      aria-label={`Select ${node.name}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3 flex items-center gap-3">
-                    {node.type === 'FOLDER' ? (
-                      <Folder className="h-5 w-5 text-blue-500 fill-blue-500/20" />
-                    ) : (
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <span className="font-medium truncate">{node.name}</span>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">
-                    {new Date(node.updatedAt).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
-                    {node.type === 'FILE' ? formatBytes(node.sizeBytes) : '--'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setRenameNode(node)}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeleteNode(node)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              );
-            })}
+            {items.map((node) => (
+              <NodeRow
+                key={node.id}
+                node={node}
+                isSelected={selectedIds.has(node.id)}
+                selectedNodeIds={selectedNodeIdsArray}
+                toggleSelect={toggleSelect}
+                onDoubleClick={handleDoubleClick}
+                onRenameAction={setRenameNode}
+                onDeleteAction={setDeleteNode}
+                onMoveNodes={(ids, targetId) => {
+                  if (folderId) {
+                    moveNodesMutation.mutate({ ids, targetId, sourceParentId: folderId });
+                  }
+                }}
+              />
+            ))}
           </tbody>
         </table>
       )}
@@ -303,6 +244,17 @@ export function FolderView() {
           }
         }}
         node={deleteNode}
+      />
+
+      <MoveDialog
+        open={moveNodesList.length > 0}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMoveNodesList([]);
+            clearSelection();
+          }
+        }}
+        nodesToMove={moveNodesList}
       />
 
       {activeFile && (
