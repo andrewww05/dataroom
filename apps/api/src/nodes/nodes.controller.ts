@@ -1,10 +1,12 @@
 import type { Breadcrumb, FsNode, NodeStats, Page } from '@dataroom/shared';
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
 import type { Principal } from '../auth/principal';
 import { ListChildrenQuery } from './dto/list-children.query';
 import { NodesService } from './nodes.service';
+import { CreateFolderDto } from './dto/create-folder.dto';
+import { RenameNodeDto } from './dto/rename-node.dto';
 
 /**
  * The read side of the tree (docs/03 § API). Nothing here carries `@Public()`, so the global guard
@@ -21,6 +23,22 @@ export class NodesController {
   @Get(':id')
   findOne(@CurrentPrincipal() principal: Principal, @Param('id') id: string): Promise<FsNode> {
     return this.nodes.findOne(principal, id);
+  }
+
+  @Post('folders')
+  createFolder(@CurrentPrincipal() principal: Principal, @Body() dto: CreateFolderDto): Promise<FsNode> {
+    return this.nodes.createFolder(principal, dto);
+  }
+
+  @Patch(':id')
+  renameNode(@CurrentPrincipal() principal: Principal, @Param('id') id: string, @Body() dto: RenameNodeDto): Promise<FsNode> {
+    return this.nodes.renameNode(principal, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  deleteNode(@CurrentPrincipal() principal: Principal, @Param('id') id: string): Promise<void> {
+    return this.nodes.deleteNode(principal, id);
   }
 
   @Get(':id/children')

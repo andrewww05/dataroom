@@ -281,7 +281,7 @@ describe('FR-NAV-030 a folder’s children', () => {
     }
   });
 
-  it('narrows to folders and still pages', async () => {
+  it('narrows to folders and still pages (FR-NAV-010)', async () => {
     const { items, pages } = await walk(mixedId, { type: 'FOLDER', limit: 40 });
 
     expect(items).toHaveLength(FOLDERS);

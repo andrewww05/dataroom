@@ -10,6 +10,7 @@ export const ErrorCode = {
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   EMAIL_TAKEN: 'EMAIL_TAKEN',
   NOT_FOUND: 'NOT_FOUND',
+  INVALID_NAME: 'INVALID_NAME',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   INTERNAL: 'INTERNAL',
 } as const;
@@ -84,9 +85,15 @@ export class EmailTakenException extends ApiException {
   }
 }
 
-/** Thrown by the `ValidationPipe`'s `exceptionFactory`; `details` names each rejected field. */
 export class ValidationFailedException extends ApiException {
   constructor(details: Record<string, string[]>) {
     super(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, 'Some fields need fixing.', details);
+  }
+}
+
+/** Thrown when a file or folder name violates BR-020 constraints. */
+export class InvalidNameException extends ApiException {
+  constructor() {
+    super(HttpStatus.BAD_REQUEST, ErrorCode.INVALID_NAME, 'That name is not allowed.');
   }
 }

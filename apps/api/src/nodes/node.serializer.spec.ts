@@ -43,8 +43,9 @@ describe('the FsNode serialiser', () => {
     expect(node.updatedAt).toBe('2026-03-02T00:00:00.000Z');
   });
 
-  it('carries a size beyond 32 bits across exactly, as a JSON number', () => {
+  it('carries a size beyond 32 bits across exactly, as a JSON number (FR-ACCT-010, FR-VIEW-020)', () => {
     // 5 GiB — past 2^32 and nowhere near 2^53, which is why the contract says number (FR-ACCT-010).
+    // FR-VIEW-020: a file reads back with its byte size as a JSON number and its content type as a string.
     const sizeBytes = 5_368_709_120n;
     const node = toFsNode({ ...folder, type: 'FILE', sizeBytes, mimeType: 'application/pdf' });
 

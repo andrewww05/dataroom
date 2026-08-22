@@ -8,6 +8,9 @@ import { decodeCursor, encodeCursor } from './cursor';
 import type { ListChildrenQuery } from './dto/list-children.query';
 import { NodeScopeService } from './node-scope.service';
 import { toFsNode, toNodeStats, type FsNodeRow, type NodeStatsRow } from './node.serializer';
+import { CreateFolderDto } from './dto/create-folder.dto';
+import { RenameNodeDto } from './dto/rename-node.dto';
+import { resolveUniqueName } from './name.helper';
 
 /** One row of the `/path` walk. `depth` counts up towards the root; the root has the highest. */
 interface AncestorRow {
@@ -69,6 +72,58 @@ export class NodesService {
   /** Nothing more than the scope check itself: it already returns the row (BR-010). */
   async findOne(principal: Principal, id: string): Promise<FsNode> {
     return toFsNode(await this.scope.resolve(principal, id));
+  }
+
+  async createFolder(principal: Principal, dto: CreateFolderDto): Promise<FsNode> {
+    const parent = await this.scope.resolve(principal, dto.parentId);
+
+    const node = await this.prisma.$transaction(async (tx) => {
+      const resolvedName = await resolveUniqueName(tx, parent.dataRoomId, parent.id, dto.name);
+      return tx.node.create({
+        data: {
+          dataRoomId: parent.dataRoomId,
+          parentId: parent.id,
+          type: 'FOLDER',
+          name: resolvedName,
+        },
+      });
+    });
+
+    return toFsNode({
+      ...node,
+      sizeBytes: null,
+      mimeType: null,
+    });
+  }
+
+  async renameNode(principal: Principal, id: string, dto: RenameNodeDto): Promise<FsNode> {
+    const existing = await this.scope.resolve(principal, id);
+    // TODO: assert 'write' capability on principal when share roles are implemented
+    
+    const node = await this.prisma.$transaction(async (tx) => {
+      const resolvedName = await resolveUniqueName(tx, existing.dataRoomId, existing.parentId, dto.name, existing.id);
+      return tx.node.update({
+        where: { id: existing.id },
+        data: { name: resolvedName },
+      });
+    });
+
+    return toFsNode({
+      ...existing,
+      name: node.name,
+      updatedAt: node.updatedAt,
+    });
+  }
+
+  async deleteNode(principal: Principal, id: string): Promise<void> {
+    const existing = await this.scope.resolve(principal, id);
+    // TODO: assert 'write' capability on principal when share roles are implemented
+    
+    await this.prisma.$transaction(async (tx) => {
+      await tx.node.delete({
+        where: { id: existing.id },
+      });
+    });
   }
 
   /**
