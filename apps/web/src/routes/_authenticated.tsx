@@ -19,6 +19,7 @@ import { FolderPicker } from '@/components/dialogs/FolderPicker';
 import { ShareDialog } from '@/components/sharing/ShareDialog';
 import { SharedWithMeList } from '@/components/sharing/SharedWithMeList';
 import { useMove } from '@/hooks/useMove';
+import { SearchBox } from '@/components/SearchBox';
 
 function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
@@ -145,7 +146,10 @@ function AuthenticatedLayout() {
         <header className="h-14 border-b flex items-center px-4 shrink-0 gap-2">
           {/* Mobile menu trigger could go here */}
           <BreadcrumbsNav dataRoomName={dataRoom?.name || 'Data Room'} />
-          <div className="ml-auto">
+          <div className="flex-1 px-4 flex justify-end max-w-xl ml-auto">
+            <SearchBox />
+          </div>
+          <div className="ml-2">
             {dataRoom?.rootId && (
               <Button
                 size="sm"

@@ -54,3 +54,13 @@ export interface Page<T> {
   items: T[];
   nextCursor: string | null;
 }
+
+/** A search result hit extending FsNode with its path. */
+export interface SearchHit extends FsNode {
+  path: Breadcrumb[];
+}
+
+/** The response envelope for search results. */
+export interface SearchResult {
+  items: SearchHit[];
+}
