@@ -26,7 +26,7 @@ function SignInRequiredScreen({ token }: { token: string }) {
         <p className="text-sm text-muted-foreground mb-6">
           A shared link exists, but you need to sign in to access it.
         </p>
-        <Button onClick={() => navigate({ to: '/login', search: { next: `/s/${token}` } as never })}>
+        <Button onClick={() => navigate({ to: '/login', search: { next: `/s/${token}` } })}>
           <LogIn className="h-4 w-4 mr-2" />
           Sign in
         </Button>

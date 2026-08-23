@@ -16,6 +16,17 @@ import {
 import type { AuthResponse } from '@dataroom/shared';
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>): { next?: string } => {
+    const next = search.next;
+
+    // Only a same-origin path is accepted. Without this the form would be an open redirect: an
+    // attacker-supplied `?next=https://evil.example` would send a freshly signed-in user, and the
+    // trust that comes with having just authenticated, straight off the site.
+    const isInAppPath =
+      typeof next === 'string' && next.startsWith('/') && !next.startsWith('//');
+
+    return isInAppPath ? { next } : {};
+  },
   component: Login,
 });
 
@@ -26,6 +37,7 @@ function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const { setSession } = useAuth();
   const router = useRouter();
+  const { next } = Route.useSearch();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +51,15 @@ function Login() {
       });
 
       setSession(response.user, response.dataRoom, response.token);
-      router.navigate({ to: '/' });
+
+      // `next` is an arbitrary in-app path, so it goes through history rather than the typed `to`
+      // union the router builds from the route tree; the router picks the change up from its own
+      // history subscription either way.
+      if (next) {
+        router.history.push(next);
+      } else {
+        router.navigate({ to: '/' });
+      }
     } catch (err) {
       if (err instanceof ApiException) {
         setError(err.message);

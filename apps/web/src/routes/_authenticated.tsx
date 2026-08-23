@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchClient } from '../api/client';
 import type { Breadcrumb } from '@dataroom/shared';
 import { useAuth } from '../hooks/useAuth';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, Home, Share2 } from 'lucide-react';
 import { DetailsPane } from '@/components/DetailsPane';
@@ -56,32 +56,33 @@ function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
 }
 
 export const Route = createFileRoute('/_authenticated')({
-  beforeLoad: () => {
-    const { user, isInitializing } = useAuth.getState();
-    if (!isInitializing && !user) {
-      throw redirect({ to: '/login' });
+  beforeLoad: async ({ location }) => {
+    // The token lives in localStorage, so whether a session exists is only known once `/auth/me`
+    // has answered. Awaiting that is what makes this guard real: the previous version bailed out
+    // while `isInitializing` was still true — which it always is on the first navigation — so an
+    // anonymous caller reached the layout and got an empty render instead of the login screen.
+    await useAuth.getState().ensureInitialized();
+
+    if (!useAuth.getState().user) {
+      // `next` carries the blocked URL so signing in returns the caller where they were headed
+      // rather than to the root. /s/$token already redirects with this key for restricted shares.
+      throw redirect({ to: '/login', search: { next: location.href } });
     }
   },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const { user, dataRoom, isInitializing, initialize, clearSession } = useAuth();
+  const { user, dataRoom, clearSession } = useAuth();
   const router = useRouter();
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
   const moveNodesMutation = useMove();
   const [shareRoomOpen, setShareRoomOpen] = useState(false);
 
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  if (isInitializing) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
-
+  // `beforeLoad` has already resolved the session and redirected anyone without one, so this
+  // narrows the type rather than guarding a state the user can actually observe.
   if (!user) {
-    return null; // Redirect will happen or we are waiting for state to update
+    return null;
   }
 
   return (
