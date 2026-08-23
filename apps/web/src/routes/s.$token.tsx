@@ -42,12 +42,73 @@ function ShareRemovedScreen() {
         <div className="rounded-full bg-muted/50 p-6 mb-4 inline-block">
           <FolderX className="h-12 w-12 text-muted-foreground/50" />
         </div>
-        <h2 className="text-xl font-semibold mb-2">This folder was removed by its owner</h2>
+        <h2 className="text-xl font-semibold mb-2">This content was removed by its owner</h2>
         <p className="text-sm text-muted-foreground">
           The shared link is no longer available. The owner may have revoked access or deleted the
           content.
         </p>
       </div>
+    </div>
+  );
+}
+
+// --- Shared File View (single file share) ---
+
+function SharedFileView({
+  node,
+  shareToken,
+  ownerEmail,
+}: {
+  node: FsNode;
+  shareToken: string;
+  ownerEmail: string;
+}) {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetchShareClient<{ url: string }>(shareToken, `/files/${node.id}/download`);
+      window.open(res.url, '_blank');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <header className="h-14 border-b flex items-center px-4 shrink-0 gap-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            Shared by <strong className="text-foreground">{ownerEmail}</strong>
+          </span>
+          <span className="text-muted-foreground/50">·</span>
+          <span>read only</span>
+        </div>
+      </header>
+
+      {/* File card */}
+      <main className="flex-1 overflow-y-auto flex items-center justify-center p-8">
+        <div className="max-w-sm w-full rounded-xl border bg-card p-8 flex flex-col items-center gap-5 text-center shadow-sm">
+          <div className="rounded-full bg-muted/50 p-6">
+            <FileIcon className="h-10 w-10 text-muted-foreground/70" />
+          </div>
+          <div className="space-y-1">
+            <p className="font-semibold text-lg break-all">{node.name}</p>
+            {node.mimeType && (
+              <p className="text-xs text-muted-foreground">{node.mimeType}</p>
+            )}
+            {node.sizeBytes !== null && (
+              <p className="text-xs text-muted-foreground">{formatBytes(node.sizeBytes)}</p>
+            )}
+          </div>
+          <Button onClick={handleDownload} disabled={downloading} className="w-full gap-2">
+            <Download className="h-4 w-4" />
+            {downloading ? 'Opening…' : 'Download'}
+          </Button>
+        </div>
+      </main>
     </div>
   );
 }
@@ -308,6 +369,17 @@ function SharedView() {
 
   if (!data) {
     return <ShareRemovedScreen />;
+  }
+
+  // A file share shows a single-file download card; a folder share shows the listing shell.
+  if (data.node.type === 'FILE') {
+    return (
+      <SharedFileView
+        node={data.node}
+        shareToken={token}
+        ownerEmail={data.ownerEmail}
+      />
+    );
   }
 
   return (
