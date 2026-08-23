@@ -28,3 +28,49 @@ The application MUST handle loading and error states gracefully at the global le
 
 - **WHEN** a fatal client-side error occurs or an unhandled API error is encountered during routing
 - **THEN** the application renders an error state with a descriptive message and an option to retry or return home.
+
+### Requirement: FR-VIEW-050 — Light and dark themes, following the OS until overridden
+
+The application SHALL render in a light and a dark theme (FR-VIEW-050). With no stored preference it
+SHALL follow the operating system's `prefers-color-scheme`. A control in the header SHALL override
+that choice, and the override SHALL be remembered across reloads and across routes. The stored
+override SHALL keep winning when the OS setting later changes; only clearing it returns the app to
+following the OS.
+
+One set of CSS custom properties SHALL drive both themes, so every surface — the shell, the listing,
+dialogs, the viewer, toasts and the shared `/s/{token}` view — changes together and no component
+carries a colour literal of its own. The chosen theme SHALL be applied before the first paint, so no
+reload flashes the wrong theme.
+
+#### Scenario: FR-VIEW-050 a first visit follows the operating system
+
+- **WHEN** someone opens the app with no stored preference and the OS set to dark
+- **THEN** the app renders dark, and rendering light when the OS is set to light
+
+#### Scenario: FR-VIEW-050 the header control overrides the OS
+
+- **WHEN** the owner switches the theme from the header while the OS is set to dark
+- **THEN** the app switches immediately to the chosen theme without a reload
+
+#### Scenario: FR-VIEW-050 the override survives a reload and outlives an OS change
+
+- **WHEN** the owner chooses light on a dark OS, reloads, and then the OS switches to light and back
+  to dark
+- **THEN** the app stays light throughout, because a stored override outranks the OS setting
+
+#### Scenario: FR-VIEW-050 no flash of the wrong theme on load
+
+- **WHEN** the app is loaded with dark stored
+- **THEN** the first painted frame is already dark — no light frame appears first
+
+#### Scenario: FR-VIEW-050 every surface follows the theme together
+
+- **WHEN** the theme is dark and the owner opens a dialog, the file viewer, a toast and the shared
+  `/s/{token}` view
+- **THEN** each renders in the dark palette, with no pane, overlay or control left in light colours
+
+#### Scenario: FR-VIEW-050 text stays legible in both themes
+
+- **WHEN** either theme is active
+- **THEN** body text, muted text and every control's label remain readable against their own
+  background, and no state is signalled by a colour that disappears in the other theme

@@ -278,4 +278,26 @@ describe('Shares', () => {
       .get(`/${API_PREFIX}/shares/resolve/${share.token}`)
       .expect(404);
   });
+
+  // --- FR-SHARE-090 Rich Link Previews ---
+
+  it('FR-SHARE-090 preview endpoint returns HTML with Open Graph tags for a folder', async () => {
+    const folderId = await createFolder(tokenA, rootIdA, 'preview-folder-test');
+    const share = await createShare(tokenA, folderId, 'PUBLIC');
+
+    const res = await request(app.getHttpServer())
+      .get(`/${API_PREFIX}/shares/preview/${share.token}`)
+      .expect(200)
+      .expect('Content-Type', /text\/html/);
+
+    expect(res.text).toContain('<title>preview-folder-test - Dataroom</title>');
+    expect(res.text).toContain('<meta property="og:title" content="preview-folder-test">');
+    expect(res.text).toContain('<meta property="og:site_name" content="Dataroom">');
+  });
+
+  it('FR-SHARE-090 preview endpoint returns 404 for an invalid token', async () => {
+    await request(app.getHttpServer())
+      .get(`/${API_PREFIX}/shares/preview/invalid-token-123`)
+      .expect(404);
+  });
 });

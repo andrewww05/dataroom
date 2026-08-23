@@ -32,4 +32,22 @@ export class SharesController {
   listReceived(@CurrentPrincipal() principal: Principal) {
     return this.shares.listReceived(principal);
   }
+
+  @Public()
+  @Get('preview/:token')
+  @Header('Content-Type', 'text/html')
+  async previewShare(@Param('token') token: string) {
+    const shareInfo = await this.shares.resolveShare(token);
+    const title = shareInfo.node.name;
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${title} - Dataroom</title>
+  <meta property="og:title" content="${title}">
+  <meta property="og:site_name" content="Dataroom">
+</head>
+<body></body>
+</html>`;
+  }
 }

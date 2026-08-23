@@ -315,6 +315,7 @@ marks what is Core.
 | GET    | `/nodes/:id/shares`     | —                                             | `NodeShares`                                                                                    | Core   |
 | DELETE | `/shares/:id`           | —                                             | `204`                                                                                           | Core   |
 | GET    | `/shares/resolve`       | `?token`                                      | `{ node, mode, role, rootNodeId, ownerEmail }` — the only route a share token may call unscoped | Core   |
+| GET    | `/shares/preview/:token`| —                                             | `200` `text/html` with Open Graph tags for rich previews                                        | Core   |
 | GET    | `/shares/received`      | —                                             | `ReceivedShare[]` (FR-SHARE-080)                                                                | Core   |
 | GET    | `/health`               | —                                             | `{ status, uptimeSeconds }`                                                                     | Core   |
 | POST   | `/nodes/copy`           | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Polish |
@@ -554,6 +555,7 @@ Four things that break only once it is not all on one machine, all cheap to get 
   outbound click from a shared view cannot hand the token to a third party.
 - **Migrations are a step, not a hope.** Run `prisma migrate deploy` before the new process serves
   traffic, and let `/health` confirm it worked.
+- **Rich link previews.** Social media bots (Slack, Twitter, Discord, etc.) do not execute JavaScript and cannot render client-side routes. Configure your reverse proxy (e.g., Nginx, Caddy, Vercel) to route user-agents matching bots from `/s/:token` to the `/api/shares/preview/:token` endpoint so they receive the server-rendered HTML with Open Graph tags.
 
 ## How it scales
 
