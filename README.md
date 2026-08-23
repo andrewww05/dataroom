@@ -124,7 +124,16 @@ Already in the schema: `Share.role` is a `ShareRole` defaulting to `VIEWER`. Han
 
 ## AI usage
 
-This project was built with the assistance of AI (Google Antigravity and Claude Code), following the spec-driven OpenSpec workflow to iterate on requirements and implement changes.
+AI was used throughout this project, and the split of work was deliberate: one tool for thinking, another for typing.
+
+| Stage                                        | Tool                                          | What it did                                                                                                                                                                    |
+| -------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Design and decomposition (`docs/`)           | **Claude Code**                               | I designed the system with Claude as a thinking partner: scope and tiers, numbered requirements and business rules, the domain model and REST surface, the UX, and the build order. Everything in `docs/` came out of that dialogue and is the source of truth the rest of the work is held to. |
+| Specs per slice (`openspec/`)                | **Claude Code**                               | Slice by slice down `docs/05-build-order.md`, I iterated with Claude to turn each slice into an OpenSpec change — proposal, design notes, delta specs with `FR-*`/`BR-*` scenario IDs, and a task list — then synced and archived it once it shipped.                                          |
+| Implementation                               | **Gemini** (via **Antigravity**, free tier)   | The code itself was written with Gemini in Antigravity, driven by the specs above. The whole implementation was done on the free tier.                                                                                                                                                        |
+| Validation                                   | Both, plus hand-verification                  | Each change ships `scripts/validate/<change-name>.sh`, which exercises its `FR-*`/`BR-*` scenarios against the running app (real Postgres, real MinIO, real HTTP), on top of `pnpm verify`. Nothing was archived on a green unit-test run alone.                                               |
+
+What that means in practice: the architecture, the requirement IDs and the slicing are mine, arrived at with Claude; the keystrokes are largely Gemini's; and every slice had to pass its own runtime validation script before it counted as done.
 
 ## Configuration
 
