@@ -1,15 +1,27 @@
 import { useSelection } from '../hooks/useSelection';
 import { useNodeStats, downloadFile } from '../hooks/useNodes';
-import { File as FileIcon, Folder as FolderIcon, Info } from 'lucide-react';
+import { File as FileIcon, Folder as FolderIcon, Info, Download, Trash2 } from 'lucide-react';
 import { formatBytes } from '../lib/utils';
 import { ViewerContent } from './FileViewer';
+import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { fetchClient } from '../api/client';
+import type { Page, FsNode } from '@dataroom/shared';
 
 import { useParams } from '@tanstack/react-router';
 
 export function DetailsPane() {
-  const { selectedNodes } = useSelection();
-  const selectedNodesList = Object.values(selectedNodes);
+  const { selectedIds } = useSelection();
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
+
+  const { data } = useQuery({
+    queryKey: ['nodes', folderId, 'children'],
+    queryFn: () => fetchClient<Page<FsNode>>(`/nodes/${folderId}/children`),
+    enabled: !!folderId,
+  });
+
+  const items = data?.items || [];
+  const selectedNodesList = items.filter((n) => selectedIds.has(n.id));
 
   if (selectedNodesList.length === 0 && folderId) {
     return (
@@ -24,7 +36,40 @@ export function DetailsPane() {
     );
   }
 
-  if (selectedNodesList.length !== 1) {
+  if (selectedNodesList.length > 1) {
+    const foldersOnly = selectedNodesList.every(n => n.type === 'FOLDER');
+    return (
+      <aside className="w-72 border-l bg-muted/10 h-full hidden lg:flex flex-col shrink-0">
+        <div className="p-4 border-b h-14 flex items-center shrink-0">
+          <span className="font-semibold text-sm">Bulk Actions</span>
+        </div>
+        <div className="p-4 flex flex-col items-center h-[calc(100%-3.5rem)] text-muted-foreground text-sm text-center pt-12">
+          <Info className="h-12 w-12 mb-4 opacity-20" />
+          <div className="text-base font-semibold text-foreground mb-6">
+            {selectedNodesList.length} items selected
+          </div>
+          <div className="flex flex-col w-full gap-2 px-2">
+            <Button variant="outline" className="w-full justify-start" onClick={() => document.dispatchEvent(new CustomEvent('dataroom:move', { detail: selectedNodesList }))}>
+              <FolderIcon className="h-4 w-4 mr-2" />
+              Move
+            </Button>
+            {!foldersOnly && (
+              <Button variant="outline" className="w-full justify-start" onClick={() => document.dispatchEvent(new CustomEvent('dataroom:download-bulk', { detail: selectedNodesList }))}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            )}
+            <Button variant="destructive" className="w-full justify-start" onClick={() => document.dispatchEvent(new CustomEvent('dataroom:delete', { detail: selectedNodesList }))}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  if (selectedNodesList.length === 0) {
     return (
       <aside className="w-72 border-l bg-muted/10 h-full hidden lg:flex flex-col shrink-0">
         <div className="p-4 border-b h-14 flex items-center shrink-0">
@@ -32,9 +77,7 @@ export function DetailsPane() {
         </div>
         <div className="p-4 flex flex-col items-center justify-center h-[calc(100%-3.5rem)] text-muted-foreground text-sm text-center">
           <Info className="h-12 w-12 mb-4 opacity-20" />
-          {selectedNodesList.length === 0
-            ? 'Select an item to view details'
-            : `${selectedNodesList.length} items selected`}
+          Select an item to view details
         </div>
       </aside>
     );

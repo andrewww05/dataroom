@@ -6,6 +6,20 @@
     <title>Dataroom</title>
   </head>
   <body>
+    <script>
+      (function() {
+        try {
+          var storageKey = 'dataroom-ui-theme';
+          var theme = localStorage.getItem(storageKey);
+          if (!theme) {
+            theme = 'system';
+          }
+          if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

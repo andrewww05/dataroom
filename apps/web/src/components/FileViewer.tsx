@@ -20,16 +20,18 @@ interface FileViewerProps {
   onNext?: () => void;
 }
 
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
 export function FileViewer({ file, onClose, onPrev, onNext }: FileViewerProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft' && onPrev) onPrev();
+      // Escape is handled by Dialog natively
+      if (e.key === 'ArrowLeft' && onPrev) onPrev();
       else if (e.key === 'ArrowRight' && onNext) onNext();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, onPrev, onNext]);
+  }, [onPrev, onNext]);
 
   const handleDownload = async () => {
     try {
@@ -41,48 +43,58 @@ export function FileViewer({ file, onClose, onPrev, onNext }: FileViewerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-sm">
-      <header className="flex h-14 items-center justify-between border-b px-4 shrink-0 bg-background">
-        <div className="flex items-center gap-2 truncate">
-          <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
-          <span className="font-semibold truncate">{file.name}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={handleDownload}>
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-      </header>
-      <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-muted/30">
-        {onPrev && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 shadow-sm"
-            onClick={onPrev}
-          >
-            <ChevronLeft className="h-8 w-8" />
-          </Button>
-        )}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent 
+        className="max-w-full w-full h-full p-0 flex flex-col m-0 border-0 rounded-none overflow-hidden bg-background/95 backdrop-blur-sm shadow-none [&>button]:hidden"
+      >
+        <DialogTitle className="sr-only">File Viewer</DialogTitle>
+        <DialogDescription className="sr-only">Viewing {file.name}</DialogDescription>
+        
+        <header className="flex h-14 items-center justify-between border-b px-4 shrink-0 bg-background">
+          <div className="flex items-center gap-2 truncate">
+            <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+            <span className="font-semibold truncate">{file.name}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close viewer">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </header>
+        
+        <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-muted/30">
+          {onPrev && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 shadow-sm"
+              onClick={onPrev}
+              aria-label="Previous file"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </Button>
+          )}
 
-        <ViewerContent file={file} onDownload={handleDownload} />
+          <ViewerContent file={file} onDownload={handleDownload} />
 
-        {onNext && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 shadow-sm"
-            onClick={onNext}
-          >
-            <ChevronRight className="h-8 w-8" />
-          </Button>
-        )}
-      </div>
-    </div>
+          {onNext && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-background/50 hover:bg-background/80 shadow-sm"
+              onClick={onNext}
+              aria-label="Next file"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </Button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

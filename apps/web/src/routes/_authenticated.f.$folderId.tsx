@@ -1,14 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchClient } from '../api/client';
-import { useUploadFiles } from '../hooks/useNodes';
+import { useUploadFiles, downloadFile } from '../hooks/useNodes';
+import { useClipboard } from '../hooks/useClipboard';
+import { useCopyNodes } from '../hooks/useCopyNodes';
 import type { Page, FsNode } from '@dataroom/shared';
 import { Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Checkbox } from '@/components/ui/checkbox';
 import { ListingToolbar } from '@/components/ListingToolbar';
 import { NewFolderDialog } from '@/components/dialogs/NewFolderDialog';
 import { RenameDialog } from '@/components/dialogs/RenameDialog';
@@ -20,6 +21,11 @@ import { useMove } from '@/hooks/useMove';
 import { FileViewer } from '@/components/FileViewer';
 import { useSelection } from '../hooks/useSelection';
 import { NodeRow } from '@/components/NodeRow';
+import { NodeContextMenu } from '@/components/NodeContextMenu';
+import { FolderBackgroundContextMenu } from '@/components/FolderBackgroundContextMenu';
+import { useViewMode } from '@/hooks/useViewMode';
+import { NodeTile } from '@/components/NodeTile';
+import { useKeyboardMap } from '@/hooks/useKeyboardMap';
 
 export const Route = createFileRoute('/_authenticated/f/$folderId')({
   validateSearch: (search: Record<string, unknown>): { file?: string } => {
@@ -35,17 +41,21 @@ export function FolderView() {
   const { folderId } = Route.useParams();
   const { file: activeFileId } = Route.useSearch();
   const navigate = useNavigate();
-  const { selectedNodes, toggleSelect, clearSelection, removeNode } = useSelection();
-  const selectedNodesList = Object.values(selectedNodes);
-  const selectedIds = new Set(Object.keys(selectedNodes));
+  const { selectedIds, toggle, clear, selectAll } = useSelection();
   const selectedNodeIdsArray = Array.from(selectedIds);
+  // Get full nodes for the selected IDs by filtering items
+  // Since items might be empty before query loads, we also need to ensure items is defined early
+  // We can do this below or derive it in render.
 
   const uploadFilesMutation = useUploadFiles();
   const moveNodesMutation = useMove();
+  const copyNodesMutation = useCopyNodes();
+  const { ids: clipboardIds, mode: clipboardMode, sourceParentId, setClipboard, clearClipboard } = useClipboard();
+  const { mode: viewMode } = useViewMode();
 
   const [newFolderOpen, setNewFolderOpen] = useState(false);
   const [renameNode, setRenameNode] = useState<FsNode | null>(null);
-  const [deleteNode, setDeleteNode] = useState<FsNode | null>(null);
+  const [deleteNodes, setDeleteNodes] = useState<FsNode[]>([]);
   const [moveNodesList, setMoveNodesList] = useState<FsNode[]>([]);
   const [shareNode, setShareNode] = useState<FsNode | null>(null);
 
@@ -60,19 +70,132 @@ export function FolderView() {
     },
   });
 
-  const items = data?.items || [];
+  useEffect(() => {
+    const handleDelete = (e: Event) => {
+      setDeleteNodes((e as CustomEvent).detail);
+    };
+    const handleMove = (e: Event) => {
+      setMoveNodesList((e as CustomEvent).detail);
+    };
+    const handleDownload = async (e: Event) => {
+      const nodes = (e as CustomEvent).detail as FsNode[];
+      const files = nodes.filter(n => n.type === 'FILE');
+      for (let i = 0; i < files.length; i++) {
+        // staggered download
+        setTimeout(async () => {
+          const url = await downloadFile(files[i].id);
+          window.location.assign(url);
+        }, i * 500);
+      }
+    };
 
-  const toggleSelectAll = () => {
-    if (selectedNodesList.length === items.length && items.length > 0) {
-      clearSelection();
-    } else {
-      items.forEach((item) => {
-        if (!selectedIds.has(item.id)) {
-          toggleSelect(item);
+    document.addEventListener('dataroom:delete', handleDelete);
+    document.addEventListener('dataroom:move', handleMove);
+    document.addEventListener('dataroom:download-bulk', handleDownload);
+    return () => {
+      document.removeEventListener('dataroom:delete', handleDelete);
+      document.removeEventListener('dataroom:move', handleMove);
+      document.removeEventListener('dataroom:download-bulk', handleDownload);
+    };
+  }, []);
+
+  const items = data?.items || [];
+  const selectedNodesList = items.filter((n) => selectedIds.has(n.id));
+
+  useKeyboardMap({
+    onEscape: () => {
+      if (activeFileId) {
+        // Viewer is active - handled by FileViewer onClose (or dialog natively)
+        // actually FileViewer onClose is triggered by its own Dialog's Esc handling.
+        // We only clear selection if we reach here and it wasn't intercepted
+        if (!newFolderOpen && !renameNode && !shareNode && moveNodesList.length === 0 && deleteNodes.length === 0) {
+          clear();
         }
-      });
-    }
-  };
+      } else if (!newFolderOpen && !renameNode && !shareNode && moveNodesList.length === 0 && deleteNodes.length === 0) {
+        clear();
+      }
+    },
+    onUp: (shift) => {
+      if (items.length === 0) return;
+      if (selectedNodesList.length === 0) {
+        toggle(items[items.length - 1].id);
+        return;
+      }
+      const activeId = selectedNodesList[selectedNodesList.length - 1].id;
+      const index = items.findIndex((i) => i.id === activeId);
+      if (index > 0) {
+        if (!shift) clear();
+        toggle(items[index - 1].id);
+      }
+    },
+    onDown: (shift) => {
+      if (items.length === 0) return;
+      if (selectedNodesList.length === 0) {
+        toggle(items[0].id);
+        return;
+      }
+      const activeId = selectedNodesList[selectedNodesList.length - 1].id;
+      const index = items.findIndex((i) => i.id === activeId);
+      if (index >= 0 && index < items.length - 1) {
+        if (!shift) clear();
+        toggle(items[index + 1].id);
+      }
+    },
+    onEnter: () => {
+      if (selectedNodesList.length === 1) {
+        handleDoubleClick(selectedNodesList[0]);
+      }
+    },
+    onBackspace: () => {
+      // Go up one folder
+      if (dataRoom && folderId !== dataRoom.rootId) {
+        // Need parent folder ID... unfortunately we don't have it natively in children list
+        // Let's just navigate to parent using path if we had it, but we can also just use browser back or not.
+        // Wait, the breadcrumb has it. We can just navigate to parent by fetching it or looking at history.
+        // Actually, if we're not at root, we can go back.
+        navigate({ to: '..' });
+      }
+    },
+    onF2: () => {
+      if (selectedNodesList.length === 1) {
+        setRenameNode(selectedNodesList[0]);
+      }
+    },
+    onDelete: () => {
+      if (selectedNodesList.length > 0) {
+        setDeleteNodes(selectedNodesList);
+      }
+    },
+    onSelectAll: () => {
+      if (items.length > 0) {
+        selectAll(items);
+      }
+    },
+    onCut: () => {
+      if (selectedNodesList.length > 0 && folderId) {
+        setClipboard(selectedNodesList.map((n) => n.id), 'cut', folderId);
+        clear();
+      }
+    },
+    onCopy: () => {
+      if (selectedNodesList.length > 0 && folderId) {
+        setClipboard(selectedNodesList.map((n) => n.id), 'copy', folderId);
+        clear();
+      }
+    },
+    onPaste: () => {
+      if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+      if (clipboardMode === 'cut') {
+        moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+        clearClipboard();
+      } else if (clipboardMode === 'copy') {
+        copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+      }
+    },
+    onSearch: () => {
+      document.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+    },
+  });
 
   const filesOnly = items.filter((n) => n.type === 'FILE');
   const activeFileIndex = activeFileId ? filesOnly.findIndex((n) => n.id === activeFileId) : -1;
@@ -164,58 +287,246 @@ export function FolderView() {
           }}
           onRename={(node) => setRenameNode(node)}
           onMove={(nodes) => setMoveNodesList(nodes)}
-          onDelete={(node) => setDeleteNode(node)}
+          onDelete={(nodes) => setDeleteNodes(nodes)}
           onShare={(node) => setShareNode(node)}
+          onCut={(nodes) => {
+            if (folderId) setClipboard(nodes.map(n => n.id), 'cut', folderId);
+            clear();
+          }}
+          onCopy={(nodes) => {
+            if (folderId) setClipboard(nodes.map(n => n.id), 'copy', folderId);
+            clear();
+          }}
+          canPaste={clipboardIds.length > 0 && !!folderId}
+          onPaste={() => {
+            if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+            if (clipboardMode === 'cut') {
+              moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+              clearClipboard();
+            } else if (clipboardMode === 'copy') {
+              copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+            }
+          }}
         />
       )}
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center flex-1">
-          <div className="rounded-full bg-muted/50 p-6 mb-4">
-            <Folder className="h-12 w-12 text-muted-foreground/50" />
+        <FolderBackgroundContextMenu
+          onCreateFolder={() => setNewFolderOpen(true)}
+          onUploadFiles={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+          canPaste={clipboardIds.length > 0 && !!folderId}
+          onPaste={() => {
+            if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+            if (clipboardMode === 'cut') {
+              moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+              clearClipboard();
+            } else if (clipboardMode === 'copy') {
+              copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+            }
+          }}
+        >
+          <div className="flex flex-col items-center justify-center py-24 text-center flex-1 h-full">
+            <div className="rounded-full bg-muted/50 p-6 mb-4">
+              <Folder className="h-12 w-12 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">This folder is empty</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              There are no files or folders here yet. Wait for the owner to upload some documents.
+            </p>
           </div>
-          <h3 className="text-lg font-semibold mb-1">This folder is empty</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            There are no files or folders here yet. Wait for the owner to upload some documents.
-          </p>
-        </div>
+        </FolderBackgroundContextMenu>
       ) : (
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-muted-foreground uppercase border-b">
-            <tr>
-              <th className="px-4 py-3 w-10">
-                <Checkbox
-                  checked={selectedNodesList.length === items.length && items.length > 0}
-                  onCheckedChange={toggleSelectAll}
-                  aria-label="Select all"
-                />
-              </th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium hidden sm:table-cell">Modified</th>
-              <th className="px-4 py-3 font-medium hidden md:table-cell">Size</th>
-              <th className="px-4 py-3 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {items.map((node) => (
-              <NodeRow
-                key={node.id}
-                node={node}
-                isSelected={selectedIds.has(node.id)}
-                selectedNodeIds={selectedNodeIdsArray}
-                toggleSelect={toggleSelect}
-                onDoubleClick={handleDoubleClick}
-                onRenameAction={setRenameNode}
-                onDeleteAction={setDeleteNode}
-                onMoveNodes={(ids, targetId) => {
-                  if (folderId) {
-                    moveNodesMutation.mutate({ ids, targetId, sourceParentId: folderId });
-                  }
-                }}
-              />
-            ))}
-          </tbody>
-        </table>
+        <FolderBackgroundContextMenu
+          onCreateFolder={() => setNewFolderOpen(true)}
+          onUploadFiles={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+          canPaste={clipboardIds.length > 0 && !!folderId}
+          onPaste={() => {
+            if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+            if (clipboardMode === 'cut') {
+              moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+              clearClipboard();
+            } else if (clipboardMode === 'copy') {
+              copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+            }
+          }}
+        >
+          <div className="h-full p-4">
+            {viewMode === 'list' ? (
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-muted-foreground uppercase border-b">
+                  <tr>
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={items.length > 0 && selectedIds.size === items.length}
+                        ref={(input) => {
+                          if (input) {
+                            input.indeterminate = selectedIds.size > 0 && selectedIds.size < items.length;
+                          }
+                        }}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            useSelection.getState().selectAll(items);
+                          } else {
+                            clear();
+                          }
+                        }}
+                      />
+                    </th>
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium w-32">Size</th>
+                    <th className="px-4 py-3 font-medium w-48">Modified</th>
+                    <th className="px-4 py-3 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {items.map((node) => {
+                    const isSelected = selectedIds.has(node.id);
+                    const contextNodes = isSelected ? selectedNodesList : [node];
+                    
+                    return (
+                      <NodeContextMenu
+                        key={`ctx-${node.id}`}
+                        selectedNodes={contextNodes}
+                        onSelectIfNeeded={() => {
+                          if (!isSelected) {
+                            useSelection.getState().selectOne(node.id);
+                          }
+                        }}
+                        onRename={setRenameNode}
+                        onMove={setMoveNodesList}
+                        onDelete={(nodes) => setDeleteNodes(nodes)}
+                        onShare={setShareNode}
+                        onCut={(nodes) => {
+                          if (folderId) setClipboard(nodes.map(n => n.id), 'cut', folderId);
+                          clear();
+                        }}
+                        onCopy={(nodes) => {
+                          if (folderId) setClipboard(nodes.map(n => n.id), 'copy', folderId);
+                          clear();
+                        }}
+                        canPaste={clipboardIds.length > 0 && !!folderId}
+                        onPaste={() => {
+                          if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+                          if (clipboardMode === 'cut') {
+                            moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+                            clearClipboard();
+                          } else if (clipboardMode === 'copy') {
+                            copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+                          }
+                        }}
+                        onDownload={async (nodes) => {
+                          const files = nodes.filter(n => n.type === 'FILE');
+                          for (let i = 0; i < files.length; i++) {
+                            setTimeout(async () => {
+                              const url = await downloadFile(files[i].id);
+                              window.location.assign(url);
+                            }, i * 500);
+                          }
+                        }}
+                      >
+                        <NodeRow
+                          node={node}
+                          isSelected={isSelected}
+                          selectedNodeIds={selectedNodeIdsArray}
+                          onSelectAction={(e) => {
+                            if (e.shiftKey) {
+                              useSelection.getState().selectRange(items, node.id);
+                            } else if (e.metaKey || e.ctrlKey) {
+                              toggle(node.id);
+                            } else {
+                              useSelection.getState().selectOne(node.id);
+                            }
+                          }}
+                          onToggleSelection={() => toggle(node.id)}
+                          onDoubleClick={handleDoubleClick}
+                          onRenameAction={setRenameNode}
+                          onDeleteAction={(node) => setDeleteNodes([node])}
+                          onMoveNodes={(ids, targetId) => {
+                            if (folderId) {
+                              moveNodesMutation.mutate({ ids, targetId, sourceParentId: folderId });
+                            }
+                          }}
+                        />
+                      </NodeContextMenu>
+                    );
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-4">
+                {items.map((node) => {
+                  const isSelected = selectedIds.has(node.id);
+                  const contextNodes = isSelected ? selectedNodesList : [node];
+                  
+                  return (
+                    <NodeContextMenu
+                      key={`ctx-${node.id}`}
+                      selectedNodes={contextNodes}
+                      onSelectIfNeeded={() => {
+                        if (!isSelected) {
+                          useSelection.getState().selectOne(node.id);
+                        }
+                      }}
+                      onRename={setRenameNode}
+                      onMove={setMoveNodesList}
+                      onDelete={(nodes) => setDeleteNodes(nodes)}
+                      onShare={setShareNode}
+                      onCut={(nodes) => {
+                        if (folderId) setClipboard(nodes.map(n => n.id), 'cut', folderId);
+                        clear();
+                      }}
+                      onCopy={(nodes) => {
+                        if (folderId) setClipboard(nodes.map(n => n.id), 'copy', folderId);
+                        clear();
+                      }}
+                      canPaste={clipboardIds.length > 0 && !!folderId}
+                      onPaste={() => {
+                        if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+                        if (clipboardMode === 'cut') {
+                          moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+                          clearClipboard();
+                        } else if (clipboardMode === 'copy') {
+                          copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+                        }
+                      }}
+                      onDownload={async (nodes) => {
+                        const files = nodes.filter(n => n.type === 'FILE');
+                        for (let i = 0; i < files.length; i++) {
+                          setTimeout(async () => {
+                            const url = await downloadFile(files[i].id);
+                            window.location.assign(url);
+                          }, i * 500);
+                        }
+                      }}
+                    >
+                      <NodeTile
+                        node={node}
+                        isSelected={isSelected}
+                        selectedNodeIds={selectedNodeIdsArray}
+                        onSelectAction={(e) => {
+                          if (e.shiftKey) {
+                            useSelection.getState().selectRange(items, node.id);
+                          } else if (e.metaKey || e.ctrlKey) {
+                            toggle(node.id);
+                          } else {
+                            useSelection.getState().selectOne(node.id);
+                          }
+                        }}
+                        onDoubleClick={handleDoubleClick}
+                        onMoveNodes={(ids, targetId) => {
+                          if (folderId) {
+                            moveNodesMutation.mutate({ ids, targetId, sourceParentId: folderId });
+                          }
+                        }}
+                      />
+                    </NodeContextMenu>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </FolderBackgroundContextMenu>
       )}
 
       {folderId && (
@@ -235,18 +546,20 @@ export function FolderView() {
       />
 
       <DeleteDialog
-        key={deleteNode?.id || 'delete-closed'}
-        open={!!deleteNode}
+        key={deleteNodes.length > 0 ? deleteNodes[0].id : 'delete-closed'}
+        open={deleteNodes.length > 0}
         onOpenChange={(open) => {
           if (!open) {
-            setDeleteNode(null);
-            // clear selection if the node was deleted and it was selected
-            if (deleteNode && selectedIds.has(deleteNode.id)) {
-              removeNode(deleteNode.id);
-            }
+            setDeleteNodes([]);
+            // clear selection if the nodes were deleted and they were selected
+            deleteNodes.forEach(node => {
+              if (selectedIds.has(node.id)) {
+                toggle(node.id);
+              }
+            });
           }
         }}
-        node={deleteNode}
+        nodes={deleteNodes}
       />
 
       <MoveDialog
@@ -254,7 +567,7 @@ export function FolderView() {
         onOpenChange={(open) => {
           if (!open) {
             setMoveNodesList([]);
-            clearSelection();
+            clear();
           }
         }}
         nodesToMove={moveNodesList}

@@ -14,6 +14,7 @@ import { StorageModule } from './storage/storage.module';
 import { FilesModule } from './files/files.module';
 import { SharesModule } from './shares/shares.module';
 import { SearchModule } from './search/search.module';
+import { DataRoomsModule } from './data-rooms/data-rooms.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { SearchModule } from './search/search.module';
     FilesModule,
     SharesModule,
     SearchModule,
+    DataRoomsModule,
   ],
   providers: [
     // One filter for every route, including the ones later slices add (BR-050).

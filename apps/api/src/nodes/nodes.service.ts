@@ -11,9 +11,11 @@ import { toFsNode, toNodeStats, type FsNodeRow, type NodeStatsRow } from './node
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { RenameNodeDto } from './dto/rename-node.dto';
 import { MoveNodesDto } from './dto/move-nodes.dto';
+import { CopyNodesDto } from './dto/copy-nodes.dto';
 import { resolveUniqueName } from './name.helper';
 import { StorageService } from '../storage/storage.service';
 import { InvalidMoveException } from '../http/api.exception';
+import { randomUUID } from 'crypto';
 
 /** One row of the `/path` walk. `depth` counts up towards the root; the root has the highest. */
 interface AncestorRow {
@@ -175,6 +177,98 @@ export class NodesService {
       sizeBytes: n.sizeBytes,
       mimeType: n.mimeType,
     } as FsNodeRow));
+  }
+
+  async copyNodes(principal: Principal, dto: CopyNodesDto): Promise<FsNode[]> {
+    assertCapability(principal, 'write');
+    const target = await this.scope.resolve(principal, dto.targetId);
+    if (target.type !== 'FOLDER') {
+      throw new InvalidMoveException();
+    }
+
+    // Verify all nodes exist and are in the same scope
+    const existingNodes = await Promise.all(
+      dto.ids.map((id) => this.scope.resolve(principal, id)),
+    );
+
+    // Cycle check: target path cannot contain any of the moving nodes
+    const targetPath = await this.path(principal, target.id);
+    const targetPathIds = new Set(targetPath.map((p) => p.id));
+    for (const id of dto.ids) {
+      if (targetPathIds.has(id)) {
+        throw new InvalidMoveException();
+      }
+    }
+
+    const copiedNodes: FsNodeRow[] = [];
+    const writtenObjectKeys: string[] = [];
+    const idMap = new Map<string, string>(); // oldId -> newId
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        for (const existing of existingNodes) {
+          const descendants = await tx.$queryRaw<(FsNodeRow & { dataRoomId: string; storageKey: string | null })[]>`
+            WITH RECURSIVE subtree AS (
+              SELECT "id", "dataRoomId", "parentId", "type", "name", "sizeBytes", "mimeType", "storageKey", "createdAt", "updatedAt", 0 AS depth
+                FROM "Node" WHERE "id" = ${existing.id} AND "dataRoomId" = ${existing.dataRoomId}
+              UNION ALL
+              SELECT n."id", n."dataRoomId", n."parentId", n."type", n."name", n."sizeBytes", n."mimeType", n."storageKey", n."createdAt", n."updatedAt", s.depth + 1
+                FROM "Node" n JOIN subtree s ON n."parentId" = s."id"
+               WHERE n."dataRoomId" = ${existing.dataRoomId}
+            )
+            SELECT * FROM subtree ORDER BY depth ASC`;
+
+          for (const node of descendants) {
+            const isRootOfCopy = node.id === existing.id;
+            const newId = randomUUID();
+            idMap.set(node.id, newId);
+            
+            const destParentId = isRootOfCopy ? target.id : idMap.get(node.parentId!)!;
+            
+            const resolvedName = isRootOfCopy
+              ? await resolveUniqueName(tx, target.dataRoomId, target.id, node.name)
+              : node.name;
+
+            let newStorageKey: string | null = null;
+            if (node.type === 'FILE' && node.storageKey) {
+              newStorageKey = `${node.dataRoomId}/${newId}`;
+              await this.storage.copyObject(node.storageKey, newStorageKey);
+              writtenObjectKeys.push(newStorageKey);
+            }
+
+            const created = await tx.node.create({
+              data: {
+                id: newId,
+                dataRoomId: node.dataRoomId,
+                parentId: destParentId,
+                type: node.type,
+                name: resolvedName,
+                sizeBytes: node.sizeBytes,
+                mimeType: node.mimeType,
+                storageKey: newStorageKey,
+              },
+            });
+
+            if (isRootOfCopy) {
+              copiedNodes.push(created as FsNodeRow);
+            }
+          }
+        }
+      });
+    } catch (e) {
+      if (writtenObjectKeys.length > 0) {
+        await this.storage.deleteObjects(writtenObjectKeys).catch(() => {});
+      }
+      throw e;
+    }
+
+    return copiedNodes.map((n) =>
+      toFsNode({
+        ...n,
+        sizeBytes: n.sizeBytes,
+        mimeType: n.mimeType,
+      } as FsNodeRow),
+    );
   }
 
   async deleteNode(principal: Principal, id: string): Promise<void> {

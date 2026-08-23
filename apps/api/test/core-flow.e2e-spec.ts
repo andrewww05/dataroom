@@ -1,6 +1,7 @@
 import { API_PREFIX } from '@dataroom/shared';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { execSync } from 'child_process';
 import { createE2eApp, teardownE2eApp, createTestUser } from './e2e-helpers';
 
 // #### Scenario: FR-TEST-010 E2E Core Flow (Upload to Revoke)
@@ -154,5 +155,15 @@ describe('Core Flow (e2e)', () => {
     // Oversize file (limit is 100MB in test env usually, but we can't easily send 100MB here without memory issues)
     // We'll skip the exact 413 check here since we can't easily mock `multer` limits dynamically
     // without altering the test app. The 415 test proves validation works before storage.
+  });
+
+  // #### Scenario: FR-OPS-030 seed creates a populated Data Room
+  it('should run the seed script successfully', () => {
+    // Using TS-node to run the script in the same env
+    const result = execSync('npx ts-node prisma/seed.ts', {
+      env: { ...process.env, SEED_DEMO_EMAIL: `seed-${Date.now()}@example.com` },
+      cwd: process.cwd() + '/apps/api',
+    });
+    expect(result.toString()).toContain('Demo seed complete');
   });
 });

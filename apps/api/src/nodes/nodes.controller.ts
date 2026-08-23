@@ -8,6 +8,7 @@ import { NodesService } from './nodes.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { MoveNodesDto } from './dto/move-nodes.dto';
 import { RenameNodeDto } from './dto/rename-node.dto';
+import { CopyNodesDto } from './dto/copy-nodes.dto';
 
 /**
  * The read side of the tree (docs/03 § API). Nothing here carries `@Public()`, so the global guard
@@ -49,6 +50,14 @@ export class NodesController {
     @Body() dto: MoveNodesDto,
   ): Promise<FsNode[]> {
     return this.nodes.moveNodes(principal, dto);
+  }
+
+  @Post('copy')
+  copyNodes(
+    @CurrentPrincipal() principal: Principal,
+    @Body() dto: CopyNodesDto,
+  ): Promise<FsNode[]> {
+    return this.nodes.copyNodes(principal, dto);
   }
 
   @Delete(':id')

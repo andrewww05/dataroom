@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import { HealthController } from './health.controller';
 
+// #### Scenario: FR-OPS-010 health endpoint responds after setup
 describe('HealthController', () => {
   let controller: HealthController;
 

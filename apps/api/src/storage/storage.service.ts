@@ -6,6 +6,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectsCommand,
+  CopyObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -146,6 +147,21 @@ export class StorageService implements OnModuleInit {
         this.logger.error(`deleteObjects failed for batch of ${batch.length} keys`, cause);
         throw new StorageUnavailableException();
       }
+    }
+  }
+
+  async copyObject(srcKey: string, destKey: string): Promise<void> {
+    try {
+      await this.client.send(
+        new CopyObjectCommand({
+          Bucket: this.bucket,
+          CopySource: `${this.bucket}/${srcKey}`,
+          Key: destKey,
+        }),
+      );
+    } catch (cause) {
+      this.logger.error(`copyObject failed for ${srcKey} -> ${destKey}`, cause);
+      throw new StorageUnavailableException();
     }
   }
 }

@@ -20,6 +20,8 @@ import { ShareDialog } from '@/components/sharing/ShareDialog';
 import { SharedWithMeList } from '@/components/sharing/SharedWithMeList';
 import { useMove } from '@/hooks/useMove';
 import { SearchBox } from '@/components/SearchBox';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { StorageFooter } from '@/components/StorageFooter';
 
 function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
@@ -138,6 +140,7 @@ function AuthenticatedLayout() {
             Sign out
           </Button>
         </div>
+        <StorageFooter />
       </aside>
 
       {/* Main Content Area - Pane 2 */}
@@ -149,7 +152,7 @@ function AuthenticatedLayout() {
           <div className="flex-1 px-4 flex justify-end max-w-xl ml-auto">
             <SearchBox />
           </div>
-          <div className="ml-2">
+          <div className="ml-2 flex items-center space-x-2">
             {dataRoom?.rootId && (
               <Button
                 size="sm"
@@ -160,6 +163,7 @@ function AuthenticatedLayout() {
                 Share
               </Button>
             )}
+            <ThemeToggle />
           </div>
         </header>
 

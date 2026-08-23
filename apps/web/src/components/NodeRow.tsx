@@ -16,7 +16,8 @@ import { useRename } from '../hooks/useRename';
 interface NodeRowProps {
   node: FsNode;
   isSelected: boolean;
-  toggleSelect: (node: FsNode) => void;
+  onSelectAction: (e: React.MouseEvent | React.KeyboardEvent) => void;
+  onToggleSelection: () => void;
   onDoubleClick: (node: FsNode) => void;
   onRenameAction: (node: FsNode) => void;
   onDeleteAction: (node: FsNode) => void;
@@ -24,16 +25,19 @@ interface NodeRowProps {
   selectedNodeIds?: string[];
 }
 
-export function NodeRow({
+import { forwardRef } from 'react';
+
+export const NodeRow = forwardRef<HTMLTableRowElement, NodeRowProps>(({
   node,
   isSelected,
-  toggleSelect,
+  onSelectAction,
+  onToggleSelection,
   onDoubleClick,
   onRenameAction,
   onDeleteAction,
   onMoveNodes,
   selectedNodeIds = [],
-}: NodeRowProps) {
+}, ref) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const renameNode = useRename();
@@ -151,9 +155,14 @@ export function NodeRow({
 
   return (
     <tr
+      ref={ref}
+      aria-selected={isSelected}
       className={`hover:bg-muted/30 transition-colors group cursor-pointer ${
         isSelected ? 'bg-muted/30' : ''
       } ${isDragOver ? 'ring-2 ring-primary bg-muted/50' : ''}`}
+      onClick={(e) => {
+        if (!isRenaming) onSelectAction(e);
+      }}
       onDoubleClick={() => {
         if (!isRenaming) onDoubleClick(node);
       }}
@@ -169,8 +178,9 @@ export function NodeRow({
       <td className="px-4 py-3 w-10">
         <Checkbox
           checked={isSelected}
-          onCheckedChange={() => toggleSelect(node)}
+          onCheckedChange={onToggleSelection}
           aria-label={`Select ${node.name}`}
+          onClick={(e) => e.stopPropagation()}
         />
       </td>
       <td className="px-4 py-3 flex items-center gap-3">
@@ -238,4 +248,4 @@ export function NodeRow({
       </td>
     </tr>
   );
-}
+});

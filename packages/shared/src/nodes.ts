@@ -64,3 +64,13 @@ export interface SearchHit extends FsNode {
 export interface SearchResult {
   items: SearchHit[];
 }
+
+export interface RoomUsage {
+  bytes: number;
+  files: number;
+}
+
+export interface CopyNodesRequest {
+  ids: string[];
+  targetId: string;
+}
