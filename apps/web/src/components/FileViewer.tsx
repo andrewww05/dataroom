@@ -86,6 +86,19 @@ export function FileViewer({ file, onClose, onPrev, onNext }: FileViewerProps) {
   );
 }
 
+/**
+ * Fetches the text content of a presigned URL from the object store.
+ * Uses the same useQuery pattern as the presigned-URL query above so that
+ * loading and error states flow through the existing UI (BR-050).
+ */
+function useTextContent(url: string) {
+  return useQuery({
+    queryKey: ['text-content', url],
+    queryFn: () => fetch(url).then((r) => r.text()),
+    retry: false,
+  });
+}
+
 export function ViewerContent({ file, onDownload }: { file: FsNode; onDownload: () => void }) {
   const {
     data: previewUrl,
@@ -130,6 +143,10 @@ export function ViewerContent({ file, onDownload }: { file: FsNode; onDownload: 
     return <iframe src={previewUrl} className="w-full h-full border-0" title={file.name} />;
   }
 
+  // image/* covers raster formats (PNG, JPEG, GIF, WebP) and image/svg+xml.
+  // SVG is rendered via <img>, which the browser sandboxes safely — no inline <svg> or
+  // dangerouslySetInnerHTML. SVG upload is blocked server-side (BR-040); this handles files
+  // that pre-date that rule. (FR-VIEW-060 task 1.4 — no code change needed here.)
   if (mime.startsWith('image/')) {
     return (
       <div className="w-full h-full p-8 flex items-center justify-center bg-zinc-950">
@@ -142,6 +159,35 @@ export function ViewerContent({ file, onDownload }: { file: FsNode; onDownload: 
     );
   }
 
+  // video/* — stream bytes directly from the object store via the presigned URL (FR-VIEW-060).
+  // Native controls only — no custom player (BR-100: nothing half-implemented).
+  if (mime.startsWith('video/')) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-zinc-950">
+        <video controls src={previewUrl} className="max-w-full max-h-full" />
+      </div>
+    );
+  }
+
+  // audio/* — stream bytes from the object store; file name shown above the player (FR-VIEW-060).
+  if (mime.startsWith('audio/')) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 p-8">
+        <p className="text-sm font-medium text-foreground truncate max-w-xs">{file.name}</p>
+          <audio controls src={previewUrl} className="w-full max-w-lg" />
+      </div>
+    );
+  }
+
+  // text/plain, text/csv, text/markdown, text/x-markdown — fetch bytes from the presigned URL
+  // (never through the API) and display verbatim in a <pre> (FR-VIEW-060, BR-050).
+  const TEXT_TYPES = ['text/plain', 'text/csv', 'text/markdown', 'text/x-markdown'];
+  if (TEXT_TYPES.includes(mime)) {
+    return <TextViewer url={previewUrl} onDownload={onDownload} />;
+  }
+
+  // Honest fallback for Office, proprietary binary, and any other format the browser cannot
+  // render natively. Shows file identity and a Download button; never an empty frame (FR-VIEW-060).
   return (
     <div className="flex flex-col items-center justify-center text-center p-8 max-w-md bg-background rounded-lg border shadow-sm">
       <div className="rounded-full bg-muted p-6 mb-6">
@@ -160,5 +206,49 @@ export function ViewerContent({ file, onDownload }: { file: FsNode; onDownload: 
         Download
       </Button>
     </div>
+  );
+}
+
+/**
+ * Renders a plain-text file fetched from a presigned URL inside a <pre> block.
+ * Delegates to ViewerContent's error UI pattern on fetch failure (BR-050).
+ */
+function TextViewer({
+  url,
+  onDownload,
+}: {
+  url: string;
+  onDownload: () => void;
+}) {
+  const { data: text, isLoading, error, refetch } = useTextContent(url);
+
+  if (isLoading) {
+    return <div className="text-muted-foreground animate-pulse">Loading preview...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-8 max-w-md">
+        <div className="rounded-full bg-destructive/10 p-4 mb-4">
+          <AlertCircle className="h-8 w-8 text-destructive" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">Could not load preview</h3>
+        <p className="text-sm text-muted-foreground mb-6">
+          There was an error loading this file for preview.
+        </p>
+        <div className="flex gap-4">
+          <Button variant="outline" onClick={() => refetch()}>
+            Try Again
+          </Button>
+          <Button onClick={onDownload}>Download File</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <pre className="overflow-auto whitespace-pre-wrap font-mono text-sm p-6 w-full h-full text-left">
+      {text ?? ''}
+    </pre>
   );
 }

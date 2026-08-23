@@ -19,7 +19,19 @@ export class SearchService {
     });
     if (!dataRoom) return [];
 
-    const hits = await this.prisma.$queryRaw<any[]>`
+    const hits = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        parentId: string | null;
+        type: string;
+        name: string;
+        sizeBytes: bigint | null;
+        mimeType: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        path: Array<{ id: string; name: string }>;
+      }>
+    >`
       WITH RECURSIVE
       search_hits AS (
         SELECT id, "parentId", type::text, name, "sizeBytes", "mimeType", "createdAt", "updatedAt"

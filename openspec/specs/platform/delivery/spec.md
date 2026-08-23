@@ -7,8 +7,8 @@ and the idempotent demo seed.
 
 ### Requirement: FR-OPS-010 clean-clone setup
 
-The app runs end to end from a clean clone with no cloud account: `docker compose up -d`,
-`pnpm install`, one migration command, `pnpm dev`. Nothing in the code names a host or a vendor.
+The app MUST run end to end from a clean clone with no cloud account: `docker compose up -d`,
+`pnpm install`, one migration command, `pnpm dev`. Nothing in the code SHALL name a host or a vendor.
 
 #### Scenario: FR-OPS-010 health endpoint responds after setup
 - **WHEN** `GET /api/health` is called after `docker compose up -d` and `pnpm dev`
@@ -22,9 +22,9 @@ The app runs end to end from a clean clone with no cloud account: `docker compos
 
 ### Requirement: FR-OPS-020 README deliverable
 
-The root README carries: design decisions and their trade-offs, setup instructions that work from
+The root README MUST carry: design decisions and their trade-offs, setup instructions that work from
 a clean clone, the ERD, the three "How it scales" answers, a note on where and how AI was used,
-and what any host has to provide. It replaces the current boilerplate README.
+and what any host has to provide. It MUST replace the current boilerplate README.
 
 #### Scenario: FR-OPS-020 README contains setup from a clean clone
 - **WHEN** a reviewer reads the README
@@ -50,8 +50,8 @@ and what any host has to provide. It replaces the current boilerplate README.
 
 ### Requirement: FR-OPS-030 idempotent demo seed
 
-A seeded demo account opens onto a populated Data Room with nested folders, sample files, and one
-active public share. The seed is idempotent and refuses to touch a database where the demo email
+A seeded demo account MUST open onto a populated Data Room with nested folders, sample files, and one
+active public share. The seed MUST be idempotent and refuse to touch a database where the demo email
 already exists with different data.
 
 #### Scenario: FR-OPS-030 seed creates a populated Data Room

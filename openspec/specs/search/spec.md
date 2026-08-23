@@ -10,13 +10,15 @@ that replaces the listing with results and navigates to the parent folder on sel
 
 ### Requirement: FR-SRCH-010 — debounced substring search returning hits with paths
 
-The search box in the app header filters the whole Data Room by case-insensitive substring on the
-node name, debounced 300 ms. The query is only sent once the term reaches three characters
+The search box in the app header MUST filter the whole Data Room by case-insensitive substring on the
+node name, debounced 300 ms. The query MUST only be sent once the term reaches three characters
 (trigram indexes need three characters to be selective — below that a leading-wildcard scan
-degrades to a full-table scan). Results are capped at 50 rows, each carrying the `FsNode` fields
+degrades to a full-table scan).
+
+Results MUST be capped at 50 rows, each carrying the `FsNode` fields
 plus a `path: Breadcrumb[]` from the node to — but not including — the Data Room root. Clicking a
-result navigates to the parent folder (`/f/:parentId`) with that item selected. While search is
-active the breadcrumb bar reads `Search: "<q>"` with a Clear affordance.
+result MUST navigate to the parent folder (`/f/:parentId`) with that item selected. While search is
+active the breadcrumb bar MUST read `Search: "<q>"` with a Clear affordance.
 
 #### Scenario: FR-SRCH-010 three-or-more characters triggers a query
 
@@ -55,7 +57,7 @@ active the breadcrumb bar reads `Search: "<q>"` with a Clear affordance.
 ### Requirement: FR-SRCH-020 — clearing search returns to the prior folder
 
 Clearing the search box (pressing Esc, clicking Clear in the breadcrumb bar, or erasing the input)
-discards the results list and returns to the folder that was open before the search began.
+MUST discard the results list and return to the folder that was open before the search began.
 
 #### Scenario: FR-SRCH-020 clear restores the previous folder
 

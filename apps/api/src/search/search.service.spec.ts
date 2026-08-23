@@ -66,7 +66,7 @@ describe('SearchService', () => {
         },
       ];
 
-      jest.spyOn(prisma.dataRoom, 'findFirst').mockResolvedValue({ id: 'room-1' } as any);
+      jest.spyOn(prisma.dataRoom, 'findFirst').mockResolvedValue({ id: 'room-1' } as never);
       jest.spyOn(prisma, '$queryRaw').mockResolvedValue(mockDbHits);
 
       const result = await service.search(principal, 'test');
@@ -91,7 +91,7 @@ describe('SearchService', () => {
         userId: 'user-1',
       };
 
-      jest.spyOn(prisma.dataRoom, 'findFirst').mockResolvedValue({ id: 'room-1' } as any);
+      jest.spyOn(prisma.dataRoom, 'findFirst').mockResolvedValue({ id: 'room-1' } as never);
       jest.spyOn(prisma, '$queryRaw').mockResolvedValue([]);
 
       const result = await service.search(principal, 'test');
