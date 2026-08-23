@@ -236,8 +236,14 @@ routed through the API (FR-VIEW-060, BR-050).
 
 The viewer SHALL close on `Esc` and on its own close control, returning to the listing with the file
 still selected (FR-VIEW-060). `←` and `→` SHALL step to the previous and next **file** of the same
-folder in the order the listing shows, without returning to the listing. The open file SHALL be part
-of the URL, so a viewer link opens the same file and the browser's Back closes the viewer.
+folder in the order the listing shows, without returning to the listing.
+
+In the owner's listing the open file SHALL be part of the URL, so a viewer link opens the same file
+and the browser's Back closes the viewer. The shared view at `/s/{token}` SHALL NOT carry the open
+file in the URL, because the folder the visitor is browsing is not carried there either — a URL that
+named a file but not its folder would open the viewer over the wrong listing. The shared viewer
+SHALL instead close on `Esc` and on its close control back to the folder it was opened from
+(FR-SHARE-070).
 
 #### Scenario: FR-VIEW-060 Esc closes the viewer
 
@@ -271,6 +277,12 @@ of the URL, so a viewer link opens the same file and the browser's Back closes t
 
 - **WHEN** the owner opens the viewer from a listing and then presses the browser's Back
 - **THEN** the viewer closes and the same folder's listing is shown
+
+#### Scenario: FR-SHARE-070 the shared viewer is not addressable by URL
+
+- **WHEN** a visitor opens a file in the shared view and then copies the address bar
+- **THEN** the address is still the share's own URL, so the copied link opens the shared root rather
+  than a viewer over a folder the link does not name
 
 #### Scenario: FR-VIEW-060 a file the caller cannot have is refused, not half-rendered
 

@@ -18,11 +18,12 @@ interface FileViewerProps {
   onClose: () => void;
   onPrev?: () => void;
   onNext?: () => void;
+  shareToken?: string;
 }
 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
-export function FileViewer({ file, onClose, onPrev, onNext }: FileViewerProps) {
+export function FileViewer({ file, onClose, onPrev, onNext, shareToken }: FileViewerProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape is handled by Dialog natively
@@ -35,7 +36,7 @@ export function FileViewer({ file, onClose, onPrev, onNext }: FileViewerProps) {
 
   const handleDownload = async () => {
     try {
-      const url = await downloadFile(file.id);
+      const url = await downloadFile(file.id, shareToken);
       window.location.assign(url);
     } catch (e) {
       console.error('Download failed', e);
@@ -79,7 +80,7 @@ export function FileViewer({ file, onClose, onPrev, onNext }: FileViewerProps) {
             </Button>
           )}
 
-          <ViewerContent file={file} onDownload={handleDownload} />
+          <ViewerContent file={file} shareToken={shareToken} onDownload={handleDownload} />
 
           {onNext && (
             <Button
@@ -111,15 +112,15 @@ function useTextContent(url: string) {
   });
 }
 
-export function ViewerContent({ file, onDownload }: { file: FsNode; onDownload: () => void }) {
+export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; shareToken?: string; onDownload: () => void }) {
   const {
     data: previewUrl,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['preview', file.id],
-    queryFn: () => previewFile(file.id),
+    queryKey: ['preview', file.id, shareToken ?? 'owner'],
+    queryFn: () => previewFile(file.id, shareToken),
     retry: false,
   });
 

@@ -1,7 +1,10 @@
+# sharing/rich-preview Specification
+
 ## Purpose
+
 Serves static HTML with Open Graph metadata for bots and crawlers to generate rich link previews for shared nodes.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: FR-SHARE-090
 Bots and crawlers MUST receive Open Graph metadata for shared links.

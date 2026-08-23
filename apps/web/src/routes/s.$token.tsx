@@ -6,6 +6,7 @@ import type { Breadcrumb, FsNode, Page } from '@dataroom/shared';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Folder, FileIcon, Download, ShieldAlert, FolderX, LogIn } from 'lucide-react';
+import { FileViewer, ViewerContent } from '../components/FileViewer';
 
 
 export const Route = createFileRoute('/s/$token')({
@@ -63,16 +64,9 @@ function SharedFileView({
   shareToken: string;
   ownerEmail: string;
 }) {
-  const [downloading, setDownloading] = useState(false);
-
   const handleDownload = async () => {
-    setDownloading(true);
-    try {
-      const res = await fetchShareClient<{ url: string }>(shareToken, `/files/${node.id}/download`);
-      window.open(res.url, '_blank');
-    } finally {
-      setDownloading(false);
-    }
+    const res = await fetchShareClient<{ url: string }>(shareToken, `/files/${node.id}/download`);
+    window.open(res.url, '_blank');
   };
 
   return (
@@ -89,25 +83,8 @@ function SharedFileView({
       </header>
 
       {/* File card */}
-      <main className="flex-1 overflow-y-auto flex items-center justify-center p-8">
-        <div className="max-w-sm w-full rounded-xl border bg-card p-8 flex flex-col items-center gap-5 text-center shadow-sm">
-          <div className="rounded-full bg-muted/50 p-6">
-            <FileIcon className="h-10 w-10 text-muted-foreground/70" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-semibold text-lg break-all">{node.name}</p>
-            {node.mimeType && (
-              <p className="text-xs text-muted-foreground">{node.mimeType}</p>
-            )}
-            {node.sizeBytes !== null && (
-              <p className="text-xs text-muted-foreground">{formatBytes(node.sizeBytes)}</p>
-            )}
-          </div>
-          <Button onClick={handleDownload} disabled={downloading} className="w-full gap-2">
-            <Download className="h-4 w-4" />
-            {downloading ? 'Opening…' : 'Download'}
-          </Button>
-        </div>
+      <main className="flex-1 relative flex items-center justify-center overflow-hidden bg-muted/30">
+        <ViewerContent file={node} shareToken={shareToken} onDownload={handleDownload} />
       </main>
     </div>
   );
@@ -123,6 +100,7 @@ interface SharedViewShellProps {
 
 function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShellProps) {
   const [currentFolderId, setCurrentFolderId] = useState(rootNodeId);
+  const [viewingFile, setViewingFile] = useState<FsNode | null>(null);
 
   const { data: pathData = [] } = useQuery({
     queryKey: ['shared', shareToken, 'path', currentFolderId],
@@ -147,8 +125,20 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
   const handleNavigate = (node: FsNode) => {
     if (node.type === 'FOLDER') {
       setCurrentFolderId(node.id);
+    } else {
+      setViewingFile(node);
     }
   };
+
+  let onPrev: (() => void) | undefined;
+  let onNext: (() => void) | undefined;
+  
+  if (viewingFile) {
+    const files = items.filter((n) => n.type === 'FILE');
+    const idx = files.findIndex((n) => n.id === viewingFile.id);
+    if (idx > 0) onPrev = () => setViewingFile(files[idx - 1]);
+    if (idx < files.length - 1) onNext = () => setViewingFile(files[idx + 1]);
+  }
 
   const handleDownload = async (node: FsNode) => {
     if (node.type !== 'FILE') return;
@@ -196,6 +186,15 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
 
       {/* Content */}
       <main className="flex-1 overflow-y-auto">
+        {viewingFile && (
+          <FileViewer
+            file={viewingFile}
+            shareToken={shareToken}
+            onClose={() => setViewingFile(null)}
+            onPrev={onPrev}
+            onNext={onNext}
+          />
+        )}
         {isLoading ? (
           <div className="p-4">
             <table className="w-full text-sm text-left">

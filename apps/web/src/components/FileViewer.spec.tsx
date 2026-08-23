@@ -67,7 +67,18 @@ describe('ViewerContent', () => {
     
     expect(reactQuery.useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['preview', '123'],
+        queryKey: ['preview', '123', 'owner'],
+        queryFn: expect.any(Function),
+      })
+    );
+  });
+
+  it('calls preview endpoint using shareToken when provided and updates query key', () => {
+    render(<ViewerContent file={baseNode} shareToken="test-token" onDownload={vi.fn()} />);
+    
+    expect(reactQuery.useQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['preview', '123', 'test-token'],
         queryFn: expect.any(Function),
       })
     );

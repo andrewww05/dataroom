@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { fetchClient } from '../api/client';
+import { fetchClient, fetchShareClient } from '../api/client';
 import type { FsNode, NodeStats } from '@dataroom/shared';
 import { toast } from 'sonner';
 
@@ -115,12 +115,16 @@ export function useUploadFiles() {
   });
 }
 
-export async function downloadFile(fileId: string) {
-  const res = await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/download`);
+export async function downloadFile(fileId: string, shareToken?: string) {
+  const res = shareToken
+    ? await fetchShareClient<{ url: string; expiresAt: string }>(shareToken, `/files/${fileId}/download`)
+    : await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/download`);
   return res.url;
 }
 
-export async function previewFile(fileId: string) {
-  const res = await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/preview`);
+export async function previewFile(fileId: string, shareToken?: string) {
+  const res = shareToken
+    ? await fetchShareClient<{ url: string; expiresAt: string }>(shareToken, `/files/${fileId}/preview`)
+    : await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/preview`);
   return res.url;
 }
