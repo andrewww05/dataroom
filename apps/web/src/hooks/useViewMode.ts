@@ -14,6 +14,6 @@ export const useViewMode = create<ViewModeState>()(
     }),
     {
       name: 'dataroom-view-mode',
-    }
-  )
+    },
+  ),
 );

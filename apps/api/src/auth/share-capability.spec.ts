@@ -74,10 +74,11 @@ describe('BR-070: A share is refused on mutating routes', () => {
     if (testBody.parentId === '') testBody.parentId = rootId;
     if (testBody.targetId === '') testBody.targetId = rootId;
     if (testBody.ids && testBody.ids[0] === 'REPLACE_ID') testBody.ids = [rootId];
-    
+
     const testPath = path.replace('REPLACE_ID', rootId);
-    
-    let req = request(app.getHttpServer())[method as 'post' | 'patch' | 'delete'](url(testPath))
+
+    let req = request(app.getHttpServer())
+      [method as 'post' | 'patch' | 'delete'](url(testPath))
       .set('Authorization', `Share ${viewerShareToken}`);
 
     if (method !== 'delete') req = req.send(testBody);
@@ -93,10 +94,11 @@ describe('BR-070: A share is refused on mutating routes', () => {
     if (testBody.parentId === '') testBody.parentId = rootId;
     if (testBody.targetId === '') testBody.targetId = rootId;
     if (testBody.ids && testBody.ids[0] === 'REPLACE_ID') testBody.ids = [rootId];
-    
+
     const testPath = path.replace('REPLACE_ID', rootId);
 
-    let req = request(app.getHttpServer())[method as 'post' | 'patch' | 'delete'](url(testPath))
+    let req = request(app.getHttpServer())
+      [method as 'post' | 'patch' | 'delete'](url(testPath))
       .set('Authorization', `Share ${editorShareToken}`);
 
     if (method !== 'delete') req = req.send(testBody);

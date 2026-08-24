@@ -4,7 +4,16 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { FolderPlus, Pencil, Share2, Trash2, Scissors, Copy, ClipboardPaste, Download } from 'lucide-react';
+import {
+  FolderPlus,
+  Pencil,
+  Share2,
+  Trash2,
+  Scissors,
+  Copy,
+  ClipboardPaste,
+  Download,
+} from 'lucide-react';
 import type { FsNode } from '@dataroom/shared';
 
 interface NodeContextMenuProps {
@@ -99,7 +108,10 @@ export function NodeContextMenu({
         )}
 
         {selectedNodes.length > 0 && onDelete && (
-          <ContextMenuItem onClick={() => onDelete(selectedNodes)} className="text-destructive focus:text-destructive">
+          <ContextMenuItem
+            onClick={() => onDelete(selectedNodes)}
+            className="text-destructive focus:text-destructive"
+          >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </ContextMenuItem>

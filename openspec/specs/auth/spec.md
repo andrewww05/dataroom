@@ -262,4 +262,3 @@ This is a breaking change to the URL shape but not to the behavior contract (FR-
 
 - **WHEN** `GET /api/shares/resolve/<token>` (path-segment form) is called
 - **THEN** the response is `404` (no route registered for that shape)
-

@@ -7,20 +7,63 @@
   </head>
   <body>
     <script>
-      (function() {
+      (function () {
         try {
           var storageKey = 'dataroom-ui-theme';
           var theme = localStorage.getItem(storageKey);
           if (!theme) {
             theme = 'system';
           }
-          if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          if (
+            theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          ) {
             document.documentElement.classList.add('dark');
           }
         } catch (e) {}
       })();
     </script>
-    <div id="root"></div>
+    <style>
+      /* The one place a colour literal is allowed: no stylesheet exists yet.
+         Both values are copied from src/index.css — keep them in sync. */
+      #boot {
+        background: oklch(1 0 0);
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+      }
+      .dark #boot {
+        background: oklch(0.145 0 0);
+      }
+      #boot-sidebar {
+        width: 16rem;
+        border-right: 1px solid rgba(128, 128, 128, 0.2);
+        display: none;
+      }
+      @media (min-width: 768px) {
+        #boot-sidebar {
+          display: block;
+        }
+      }
+      #boot-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      #boot-header {
+        height: 3.5rem;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+      }
+    </style>
+    <div id="root">
+      <div id="boot">
+        <div id="boot-sidebar"></div>
+        <div id="boot-main">
+          <div id="boot-header"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

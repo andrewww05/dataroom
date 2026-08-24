@@ -1,4 +1,12 @@
-import type { Breadcrumb, FsNode, NodeShares, NodeStats, NodeType, Page, Share } from '@dataroom/shared';
+import type {
+  Breadcrumb,
+  FsNode,
+  NodeShares,
+  NodeStats,
+  NodeType,
+  Page,
+  Share,
+} from '@dataroom/shared';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { assertCapability, type Principal } from '../auth/principal';
@@ -138,9 +146,7 @@ export class NodesService {
     }
 
     // Verify all nodes exist and are in the same scope
-    const existingNodes = await Promise.all(
-      dto.ids.map((id) => this.scope.resolve(principal, id)),
-    );
+    const existingNodes = await Promise.all(dto.ids.map((id) => this.scope.resolve(principal, id)));
 
     // Cycle check: target path cannot contain any of the moving nodes
     const targetPath = await this.path(principal, target.id);
@@ -152,7 +158,7 @@ export class NodesService {
     }
 
     const movedNodes: FsNodeRow[] = [];
-    
+
     await this.prisma.$transaction(async (tx) => {
       for (const existing of existingNodes) {
         const resolvedName = await resolveUniqueName(
@@ -162,21 +168,23 @@ export class NodesService {
           existing.name,
           existing.parentId === target.id ? existing.id : undefined,
         );
-        
+
         const updated = await tx.node.update({
           where: { id: existing.id },
           data: { parentId: target.id, name: resolvedName },
         });
-        
+
         movedNodes.push(updated);
       }
     });
 
-    return movedNodes.map(n => toFsNode({
-      ...n,
-      sizeBytes: n.sizeBytes,
-      mimeType: n.mimeType,
-    } as FsNodeRow));
+    return movedNodes.map((n) =>
+      toFsNode({
+        ...n,
+        sizeBytes: n.sizeBytes,
+        mimeType: n.mimeType,
+      } as FsNodeRow),
+    );
   }
 
   async copyNodes(principal: Principal, dto: CopyNodesDto): Promise<FsNode[]> {
@@ -187,9 +195,7 @@ export class NodesService {
     }
 
     // Verify all nodes exist and are in the same scope
-    const existingNodes = await Promise.all(
-      dto.ids.map((id) => this.scope.resolve(principal, id)),
-    );
+    const existingNodes = await Promise.all(dto.ids.map((id) => this.scope.resolve(principal, id)));
 
     // Cycle check: target path cannot contain any of the moving nodes
     const targetPath = await this.path(principal, target.id);
@@ -207,7 +213,9 @@ export class NodesService {
     try {
       await this.prisma.$transaction(async (tx) => {
         for (const existing of existingNodes) {
-          const descendants = await tx.$queryRaw<(FsNodeRow & { dataRoomId: string; storageKey: string | null })[]>`
+          const descendants = await tx.$queryRaw<
+            (FsNodeRow & { dataRoomId: string; storageKey: string | null })[]
+          >`
             WITH RECURSIVE subtree AS (
               SELECT "id", "dataRoomId", "parentId", "type", "name", "sizeBytes", "mimeType", "storageKey", "createdAt", "updatedAt", 0 AS depth
                 FROM "Node" WHERE "id" = ${existing.id} AND "dataRoomId" = ${existing.dataRoomId}
@@ -222,9 +230,9 @@ export class NodesService {
             const isRootOfCopy = node.id === existing.id;
             const newId = randomUUID();
             idMap.set(node.id, newId);
-            
+
             const destParentId = isRootOfCopy ? target.id : idMap.get(node.parentId!)!;
-            
+
             const resolvedName = isRootOfCopy
               ? await resolveUniqueName(tx, target.dataRoomId, target.id, node.name)
               : node.name;
@@ -449,4 +457,3 @@ export class NodesService {
     return { own, inheritedFrom };
   }
 }
-

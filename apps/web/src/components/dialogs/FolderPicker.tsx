@@ -4,6 +4,7 @@ import { fetchClient } from '@/api/client';
 import { ChevronRight, ChevronDown, Folder as FolderIcon } from 'lucide-react';
 import type { FsNode, Page } from '@dataroom/shared';
 import { useAuth } from '@/hooks/useAuth';
+import { FolderTreeSkeleton } from '@/components/skeletons';
 
 /** The minimal info FolderPicker passes back on selection. */
 export interface PickedFolder {
@@ -83,7 +84,7 @@ function FolderPickerItem({
   });
 
   const children = data?.items || [];
-  
+
   // A node is disabled if it is one of the moving nodes, or if its parent is disabled
   const isDisabled = disabledIds.has(nodeId);
   const isCurrentParent = nodeId === currentParentId;
@@ -131,7 +132,7 @@ function FolderPickerItem({
   const handleDrop = (e: React.DragEvent) => {
     setIsDragOver(false);
     if (cannotSelect) return;
-    
+
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/x-dataroom-nodes'));
       if (data && data.ids && onDropNodes) {
@@ -166,11 +167,7 @@ function FolderPickerItem({
             setExpanded(!expanded);
           }}
         >
-          {expanded ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
+          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </div>
         <FolderIcon className="w-4 h-4 mr-2 text-blue-500 fill-blue-500/20" />
         <span className="truncate flex-1 text-sm">{nodeName}</span>
@@ -182,12 +179,7 @@ function FolderPickerItem({
       {expanded && (
         <div className="flex flex-col">
           {isLoading && (
-            <div
-              className="py-1 text-xs text-muted-foreground"
-              style={{ paddingLeft: `${(level + 1) * 16 + 36}px` }}
-            >
-              Loading...
-            </div>
+            <FolderTreeSkeleton style={{ paddingLeft: `${(level + 1) * 16 + 36}px` }} />
           )}
           {children.map((child) => (
             <FolderPickerItem

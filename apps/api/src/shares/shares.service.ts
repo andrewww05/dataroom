@@ -24,7 +24,7 @@ export class SharesService {
     }
 
     const token = randomBytes(32).toString('base64url');
-    
+
     const share = await this.prisma.share.create({
       data: {
         nodeId: node.id,
@@ -54,7 +54,7 @@ export class SharesService {
     if (principal.kind !== 'owner') throw new NotFoundException();
 
     const share = await this.prisma.share.findFirst({
-      where: { id, dataRoom: { ownerId: principal.userId } }
+      where: { id, dataRoom: { ownerId: principal.userId } },
     });
 
     if (!share) throw new NotFoundException();
@@ -68,10 +68,10 @@ export class SharesService {
       include: {
         node: {
           include: {
-            dataRoom: { include: { owner: true } }
-          }
-        }
-      }
+            dataRoom: { include: { owner: true } },
+          },
+        },
+      },
     });
 
     if (!share || (share.expiresAt && share.expiresAt < new Date())) {
@@ -95,7 +95,7 @@ export class SharesService {
 
   async listReceived(principal: Principal): Promise<ReceivedShare[]> {
     if (principal.kind !== 'owner') return [];
-    
+
     const user = await this.prisma.user.findUnique({ where: { id: principal.userId } });
     if (!user) return [];
 
@@ -104,14 +104,14 @@ export class SharesService {
       include: {
         node: {
           include: {
-            dataRoom: { include: { owner: true } }
-          }
-        }
+            dataRoom: { include: { owner: true } },
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
-    return shares.map(share => ({
+    return shares.map((share) => ({
       token: share.token,
       node: toFsNode({
         ...share.node,

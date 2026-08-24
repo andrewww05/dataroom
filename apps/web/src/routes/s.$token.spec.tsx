@@ -10,11 +10,13 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useNavigate: vi.fn(),
-    createFileRoute: vi.fn(() => vi.fn((config) => {
-      const Comp = config.component;
-      Comp.useParams = vi.fn(() => ({ token: 'mock-token' }));
-      return Comp;
-    })),
+    createFileRoute: vi.fn(() =>
+      vi.fn((config) => {
+        const Comp = config.component;
+        Comp.useParams = vi.fn(() => ({ token: 'mock-token' }));
+        return Comp;
+      }),
+    ),
   };
 });
 
@@ -36,21 +38,47 @@ function withQueryClient(ui: React.ReactElement) {
 }
 
 describe('Shared View (s.$token)', () => {
-  const mockFileNode: FsNode = { id: 'file1', name: 'File 1', type: 'FILE', parentId: 'root', sizeBytes: 100, mimeType: 'text/plain', createdAt: '', updatedAt: '' };
-  const mockFolderNode: FsNode = { id: 'folder1', name: 'Folder 1', type: 'FOLDER', parentId: 'root', sizeBytes: null, mimeType: null, createdAt: '', updatedAt: '' };
-  
+  const mockFileNode: FsNode = {
+    id: 'file1',
+    name: 'File 1',
+    type: 'FILE',
+    parentId: 'root',
+    sizeBytes: 100,
+    mimeType: 'text/plain',
+    createdAt: '',
+    updatedAt: '',
+  };
+  const mockFolderNode: FsNode = {
+    id: 'folder1',
+    name: 'Folder 1',
+    type: 'FOLDER',
+    parentId: 'root',
+    sizeBytes: null,
+    mimeType: null,
+    createdAt: '',
+    updatedAt: '',
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders viewer instead of a download card for a file share', async () => {
     const { fetchClient } = await import('../api/client');
-    vi.mocked(fetchClient).mockResolvedValueOnce({ node: mockFileNode, ownerEmail: 'test@example.com', mode: 'READ', role: 'VIEWER', rootNodeId: 'file1' });
-    
+    vi.mocked(fetchClient).mockResolvedValueOnce({
+      node: mockFileNode,
+      ownerEmail: 'test@example.com',
+      mode: 'READ',
+      role: 'VIEWER',
+      rootNodeId: 'file1',
+    });
+
     const { previewFile } = await import('../hooks/useNodes');
     vi.mocked(previewFile).mockResolvedValueOnce('https://example.com/preview');
     // Global fetch for useTextContent
-    global.fetch = vi.fn().mockResolvedValueOnce({ text: () => Promise.resolve('file contents'), ok: true });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ text: () => Promise.resolve('file contents'), ok: true });
 
     const { Route } = await import('./s.$token');
     // @ts-expect-error mock provider
@@ -62,14 +90,22 @@ describe('Shared View (s.$token)', () => {
 
   it('opens viewer on double-click of a file row in a folder share', async () => {
     const { fetchClient, fetchShareClient } = await import('../api/client');
-    vi.mocked(fetchClient).mockResolvedValueOnce({ node: mockFolderNode, ownerEmail: 'test@example.com', mode: 'READ', role: 'VIEWER', rootNodeId: 'folder1' });
+    vi.mocked(fetchClient).mockResolvedValueOnce({
+      node: mockFolderNode,
+      ownerEmail: 'test@example.com',
+      mode: 'READ',
+      role: 'VIEWER',
+      rootNodeId: 'folder1',
+    });
     vi.mocked(fetchShareClient)
       .mockResolvedValueOnce([{ id: 'folder1', name: 'Folder 1' }]) // path
       .mockResolvedValueOnce({ items: [mockFileNode] }); // children
-    
+
     const { previewFile } = await import('../hooks/useNodes');
     vi.mocked(previewFile).mockResolvedValueOnce('https://example.com/preview');
-    global.fetch = vi.fn().mockResolvedValueOnce({ text: () => Promise.resolve('file contents'), ok: true });
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ text: () => Promise.resolve('file contents'), ok: true });
 
     const { Route } = await import('./s.$token');
     // @ts-expect-error mock provider
@@ -82,11 +118,22 @@ describe('Shared View (s.$token)', () => {
   });
 
   it('navigates on double-click of a folder row in a folder share', async () => {
-    const childFolder: FsNode = { ...mockFolderNode, id: 'child-folder', name: 'Child Folder', parentId: 'folder1' };
-    
+    const childFolder: FsNode = {
+      ...mockFolderNode,
+      id: 'child-folder',
+      name: 'Child Folder',
+      parentId: 'folder1',
+    };
+
     const { fetchClient, fetchShareClient } = await import('../api/client');
-    vi.mocked(fetchClient).mockResolvedValueOnce({ node: mockFolderNode, ownerEmail: 'test@example.com', mode: 'READ', role: 'VIEWER', rootNodeId: 'folder1' });
-    
+    vi.mocked(fetchClient).mockResolvedValueOnce({
+      node: mockFolderNode,
+      ownerEmail: 'test@example.com',
+      mode: 'READ',
+      role: 'VIEWER',
+      rootNodeId: 'folder1',
+    });
+
     let callCount = 0;
     vi.mocked(fetchShareClient).mockImplementation(async (_token: string, path: string) => {
       if (path.endsWith('/path')) return [{ id: 'folder1', name: 'Folder 1' }];
@@ -112,8 +159,14 @@ describe('Shared View (s.$token)', () => {
 
   it('renders the Retry + Download error state on failure (BR-050)', async () => {
     const { fetchClient } = await import('../api/client');
-    vi.mocked(fetchClient).mockResolvedValueOnce({ node: mockFileNode, ownerEmail: 'test@example.com', mode: 'READ', role: 'VIEWER', rootNodeId: 'file1' });
-    
+    vi.mocked(fetchClient).mockResolvedValueOnce({
+      node: mockFileNode,
+      ownerEmail: 'test@example.com',
+      mode: 'READ',
+      role: 'VIEWER',
+      rootNodeId: 'file1',
+    });
+
     const { previewFile } = await import('../hooks/useNodes');
     vi.mocked(previewFile).mockRejectedValueOnce(new Error('fetch failed'));
 
@@ -124,5 +177,23 @@ describe('Shared View (s.$token)', () => {
     expect(await screen.findByText(/Could not load preview/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Try Again/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Download File/i })).toBeInTheDocument();
+  });
+
+  it('renders the resolve-wait placeholder without owner email (BR-010)', async () => {
+    const { fetchClient } = await import('../api/client');
+    // Return a never-resolving promise so we can observe the loading state
+    vi.mocked(fetchClient).mockReturnValueOnce(new Promise(() => {}));
+
+    const { Route } = await import('./s.$token');
+    // @ts-expect-error mock provider
+    render(withQueryClient(<Route />));
+
+    expect(screen.getByText('Name')).toBeInTheDocument(); // Table header from shell
+    // The placeholder header contains "read only" but no owner email yet.
+    // The actual token resolve returns the email later.
+    expect(screen.queryByText(/Shared by/)).not.toBeInTheDocument();
+
+    const rows = screen.getAllByRole('row');
+    expect(rows.length).toBeGreaterThan(1); // Ensure placeholder rows are rendered
   });
 });

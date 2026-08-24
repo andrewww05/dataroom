@@ -14,6 +14,7 @@ from before that rule was enforced, and the spec permits `image/svg+xml` to be r
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Add `video/` → `<video controls>` branch (FR-VIEW-060).
 - Add `audio/` → `<audio controls>` branch (FR-VIEW-060).
 - Add `text/plain`, `text/csv`, `text/markdown`, `text/x-markdown` → `fetch` + `<pre>` branch
@@ -24,6 +25,7 @@ from before that rule was enforced, and the spec permits `image/svg+xml` to be r
   honest-fallback set to Office / proprietary formats only.
 
 **Non-Goals:**
+
 - Office / OpenDocument rendering — no suitable zero-dependency in-browser library; deferred.
 - Syntax highlighting (Polish tier).
 - Inline `<svg>` embedding — the object store is a different origin; BR-040 already blocks SVG
@@ -81,10 +83,12 @@ No change to `FileViewer`'s props, the presigned-URL query, or the error/loading
 ## Validation IDs
 
 Proves at runtime via `scripts/validate/rich-preview.sh`:
+
 - FR-VIEW-060 (video, audio, text: check presigned URL returns 200 with correct Content-Type)
 - BR-050 (error state: covered by unit/component test, noted in manual checklist)
 
 Manual checklist (browser only):
+
 - Video plays with native controls; no download triggered on open.
 - Audio plays; file name visible above the player.
 - Plain-text file content visible in `<pre>`; no HTML interpretation.

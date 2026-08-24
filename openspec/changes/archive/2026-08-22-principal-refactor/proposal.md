@@ -33,9 +33,11 @@ and the second pass is where a route gets missed.
 ## Capabilities
 
 ### New Capabilities
+
 _None — all behavior is already required by BR-070; this change implements the missing enforcement._
 
 ### Modified Capabilities
+
 - `auth`: guard now validates RESTRICTED grantee email; `SIGN_IN_REQUIRED` added to error table.
 
 ## Impact

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ViewerContent } from './FileViewer';
 import * as reactQuery from '@tanstack/react-query';
@@ -23,7 +23,16 @@ function withQueryClient(ui: React.ReactElement) {
 }
 
 describe('ViewerContent', () => {
-  const baseNode: FsNode = { id: '123', parentId: 'folder1', name: 'test.pdf', type: 'FILE', sizeBytes: 1024, mimeType: 'application/pdf', createdAt: '', updatedAt: '' };
+  const baseNode: FsNode = {
+    id: '123',
+    parentId: 'folder1',
+    name: 'test.pdf',
+    type: 'FILE',
+    sizeBytes: 1024,
+    mimeType: 'application/pdf',
+    createdAt: '',
+    updatedAt: '',
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,16 +47,40 @@ describe('ViewerContent', () => {
   it('renders PdfViewer for PDF MIME types, ignoring filename extension (BR-040)', () => {
     const node = { ...baseNode, name: 'test.png', mimeType: 'application/pdf' };
     render(<ViewerContent file={node} onDownload={vi.fn()} />);
-    
+
     const iframe = screen.getByTitle('test.png');
     expect(iframe).toBeInTheDocument();
     expect(iframe).toHaveAttribute('src', 'https://example.com/preview');
   });
 
+  it('shows overlay before PDF load, hides on load, shows error on timeout (BR-050)', () => {
+    vi.useFakeTimers();
+    const node = { ...baseNode, name: 'test.pdf', mimeType: 'application/pdf' };
+    render(<ViewerContent file={node} onDownload={vi.fn()} />);
+
+    const iframe = screen.getByTitle('test.pdf');
+    expect(iframe).toHaveClass('opacity-0');
+    expect(document.querySelector('.absolute.inset-0')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.load(iframe);
+    });
+
+    expect(iframe).not.toHaveClass('opacity-0');
+    expect(document.querySelector('.absolute.inset-0')).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(30000);
+    });
+
+    expect(screen.getByText(/Could not load preview/i)).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
   it('renders ImageViewer for image MIME types', () => {
     const node = { ...baseNode, name: 'test.pdf', mimeType: 'image/jpeg' };
     render(<ViewerContent file={node} onDownload={vi.fn()} />);
-    
+
     const img = screen.getByAltText('test.pdf');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', 'https://example.com/preview');
@@ -56,7 +89,7 @@ describe('ViewerContent', () => {
   it('renders UnsupportedTypeViewer for unknown MIME types', () => {
     const node = { ...baseNode, name: 'test.docx', mimeType: 'application/msword' };
     render(<ViewerContent file={node} onDownload={vi.fn()} />);
-    
+
     expect(screen.getByText('test.docx')).toBeInTheDocument();
     expect(screen.getByText(/1 KB/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Download/i })).toBeInTheDocument();
@@ -64,23 +97,23 @@ describe('ViewerContent', () => {
 
   it('calls preview endpoint via useQuery instead of download (FR-VIEW-060)', () => {
     render(<ViewerContent file={baseNode} onDownload={vi.fn()} />);
-    
+
     expect(reactQuery.useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ['preview', '123', 'owner'],
         queryFn: expect.any(Function),
-      })
+      }),
     );
   });
 
   it('calls preview endpoint using shareToken when provided and updates query key', () => {
     render(<ViewerContent file={baseNode} shareToken="test-token" onDownload={vi.fn()} />);
-    
+
     expect(reactQuery.useQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ['preview', '123', 'test-token'],
         queryFn: expect.any(Function),
-      })
+      }),
     );
   });
 

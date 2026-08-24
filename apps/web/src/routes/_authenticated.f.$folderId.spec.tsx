@@ -22,10 +22,12 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useNavigate: vi.fn(),
-    createFileRoute: vi.fn(() => vi.fn(() => ({
-      useParams: vi.fn(() => ({ folderId: 'folder1' })),
-      useSearch: vi.fn(() => ({ file: 'file1' })),
-    }))),
+    createFileRoute: vi.fn(() =>
+      vi.fn(() => ({
+        useParams: vi.fn(() => ({ folderId: 'folder1' })),
+        useSearch: vi.fn(() => ({ file: 'file1' })),
+      })),
+    ),
   };
 });
 
@@ -48,8 +50,12 @@ vi.mock('../hooks/useNodes', async (importOriginal) => {
 vi.mock('@/components/FileViewer', () => ({
   FileViewer: ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => (
     <div data-testid="mock-viewer">
-      <button data-testid="prev-btn" onClick={onPrev} disabled={!onPrev}>Prev</button>
-      <button data-testid="next-btn" onClick={onNext} disabled={!onNext}>Next</button>
+      <button data-testid="prev-btn" onClick={onPrev} disabled={!onPrev}>
+        Prev
+      </button>
+      <button data-testid="next-btn" onClick={onNext} disabled={!onNext}>
+        Next
+      </button>
     </div>
   ),
 }));
@@ -60,12 +66,48 @@ vi.mock('@/components/FileViewer', () => ({
 // #### Scenario: FR-VIEW-010 Rendering the list view
 describe('FolderView stepping logic', () => {
   const navigateMock = vi.fn();
-  
+
   const mockNodes: FsNode[] = [
-    { id: 'folder1', name: 'Folder 1', type: 'FOLDER', parentId: 'root', sizeBytes: null, mimeType: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'file1', name: 'File 1', type: 'FILE', parentId: 'folder1', sizeBytes: 100, mimeType: 'text/plain', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'folder2', name: 'Folder 2', type: 'FOLDER', parentId: 'folder1', sizeBytes: null, mimeType: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: 'file2', name: 'File 2', type: 'FILE', parentId: 'folder1', sizeBytes: 200, mimeType: 'image/png', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    {
+      id: 'folder1',
+      name: 'Folder 1',
+      type: 'FOLDER',
+      parentId: 'root',
+      sizeBytes: null,
+      mimeType: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'file1',
+      name: 'File 1',
+      type: 'FILE',
+      parentId: 'folder1',
+      sizeBytes: 100,
+      mimeType: 'text/plain',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'folder2',
+      name: 'Folder 2',
+      type: 'FOLDER',
+      parentId: 'folder1',
+      sizeBytes: null,
+      mimeType: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'file2',
+      name: 'File 2',
+      type: 'FILE',
+      parentId: 'folder1',
+      sizeBytes: 200,
+      mimeType: 'image/png',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
   ];
 
   beforeEach(() => {
@@ -83,16 +125,16 @@ describe('FolderView stepping logic', () => {
     const { Route } = await import('./_authenticated.f.$folderId');
     vi.mocked(Route.useSearch).mockReturnValue({ file: 'file1' });
     vi.mocked(Route.useParams).mockReturnValue({ folderId: 'folder1' });
-    
+
     render(<FolderView />);
-    
+
     // Previous should be disabled (no wrapping)
     expect(screen.getByTestId('prev-btn')).toBeDisabled();
-    
+
     // Next should go to file2 (skipping folderB)
     expect(screen.getByTestId('next-btn')).not.toBeDisabled();
     fireEvent.click(screen.getByTestId('next-btn'));
-    
+
     expect(navigateMock).toHaveBeenCalledWith({ search: { file: 'file2' } });
   });
 
@@ -101,16 +143,16 @@ describe('FolderView stepping logic', () => {
     const { Route } = await import('./_authenticated.f.$folderId');
     vi.mocked(Route.useSearch).mockReturnValue({ file: 'file2' });
     vi.mocked(Route.useParams).mockReturnValue({ folderId: 'folder1' });
-    
+
     render(<FolderView />);
-    
+
     // Next should be disabled (no wrapping)
     expect(screen.getByTestId('next-btn')).toBeDisabled();
-    
+
     // Prev should go to file1 (skipping folderB)
     expect(screen.getByTestId('prev-btn')).not.toBeDisabled();
     fireEvent.click(screen.getByTestId('prev-btn'));
-    
+
     expect(navigateMock).toHaveBeenCalledWith({ search: { file: 'file1' } });
   });
 });

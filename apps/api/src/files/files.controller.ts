@@ -20,7 +20,11 @@ import { FilesService } from './files.service';
 import { UploadFileDto } from './dto/upload-file.dto';
 import { CurrentPrincipal } from '../auth/current-principal.decorator';
 import { assertCapability, Principal } from '../auth/principal';
-import { UnsupportedTypeException, ValidationFailedException, TooManyFilesException } from '../http/api.exception';
+import {
+  UnsupportedTypeException,
+  ValidationFailedException,
+  TooManyFilesException,
+} from '../http/api.exception';
 import { sniffMimeType } from './mime.sniffer';
 import { UPLOAD_ALLOWED_MIME_TYPES } from '@dataroom/shared';
 

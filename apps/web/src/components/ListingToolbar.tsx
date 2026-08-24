@@ -1,5 +1,16 @@
 import { Button } from '@/components/ui/button';
-import { FolderPlus, Pencil, Share2, Trash2, Upload, Scissors, Copy, ClipboardPaste, LayoutGrid, List } from 'lucide-react';
+import {
+  FolderPlus,
+  Pencil,
+  Share2,
+  Trash2,
+  Upload,
+  Scissors,
+  Copy,
+  ClipboardPaste,
+  LayoutGrid,
+  List,
+} from 'lucide-react';
 import type { FsNode } from '@dataroom/shared';
 import { useRef } from 'react';
 import { useViewMode } from '@/hooks/useViewMode';
@@ -109,11 +120,15 @@ export function ListingToolbar({
       <div className="flex-1" />
 
       <div className="flex items-center ml-2 pl-2 border-l space-x-2">
-        <Button size="icon" variant="ghost" onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')} aria-label={viewMode === 'list' ? 'Switch to grid view' : 'Switch to list view'}>
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+          aria-label={viewMode === 'list' ? 'Switch to grid view' : 'Switch to list view'}
+        >
           {viewMode === 'list' ? <LayoutGrid className="h-4 w-4" /> : <List className="h-4 w-4" />}
         </Button>
       </div>
     </div>
   );
 }
-

@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from '@tanstack/react-router';
 import { useAuth } from '../hooks/useAuth';
+import { AppShellSkeleton } from '@/components/skeletons';
 
 export const Route = createFileRoute('/_authenticated/')({
   component: IndexRedirect,
@@ -12,5 +13,5 @@ function IndexRedirect() {
     return <Navigate to="/f/$folderId" params={{ folderId: dataRoom.rootId }} replace />;
   }
 
-  return null;
+  return <AppShellSkeleton />;
 }

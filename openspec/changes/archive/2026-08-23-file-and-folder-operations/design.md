@@ -7,6 +7,7 @@ the delete dialog does not yet show stats for files. No `MoveDialog` or `FolderP
 `POST /nodes/move` in `nodes.service.ts` does not yet run the cycle check.
 
 Relevant endpoints and types (from docs/03):
+
 - `PATCH /nodes/:id` — body `{ name }`, returns `FsNode`
 - `POST /nodes/move` — body `{ ids: string[], targetId: string }`, returns `FsNode[]`
 - `DELETE /nodes/:id` — returns `204`
@@ -18,6 +19,7 @@ Relevant endpoints and types (from docs/03):
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Inline rename for files and folders (single component, same UX)
 - `MoveDialog` with `FolderPicker` that lazy-loads the tree and enforces picker-level disabling
 - Drag-onto-folder in the listing and the sidebar tree as a no-dialog shortcut for move
@@ -26,6 +28,7 @@ Relevant endpoints and types (from docs/03):
 - Validation script `scripts/validate/file-and-folder-operations.sh`
 
 **Non-Goals:**
+
 - Multi-select move/delete (slice 14)
 - Copy/paste (slice 15)
 - Context menu (slice 14)
@@ -82,6 +85,7 @@ dialog — would delay the open feel for a slow network with no benefit.
 ## Validation script coverage
 
 The script (`scripts/validate/file-and-folder-operations.sh`) proves via the HTTP API:
+
 - FR-FILE-030 — rename file, extension preserved; BR-020 collision suffixing; `400 INVALID_NAME`
 - FR-FILE-040 — delete file returns `204`; cancel leaves the file; share count in dialog (manual)
 - FR-FILE-050 — move file via `POST /nodes/move`; BR-020 collision at target; current-parent check
@@ -89,6 +93,7 @@ The script (`scripts/validate/file-and-folder-operations.sh`) proves via the HTT
 - FR-FLDR-020 — rename folder; BR-020 on folder rename
 
 Cannot be proven by the script (manual checklist printed at the end):
+
 - Inline rename UX: `F2` key, click-on-selected-name, Esc to cancel
 - Drag-onto-folder in listing and sidebar tree
 - Confirm button disabled while stats load

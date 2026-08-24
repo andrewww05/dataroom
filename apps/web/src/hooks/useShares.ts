@@ -2,12 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import type { ShareMode } from '@dataroom/shared';
 
-import {
-  createShare,
-  listNodeShares,
-  listReceivedShares,
-  revokeShare,
-} from '../api/shares';
+import { createShare, listNodeShares, listReceivedShares, revokeShare } from '../api/shares';
 
 /** Direct shares on a node + inherited ancestor (FR-SHARE-060). */
 export function useNodeShares(nodeId: string, enabled = true) {

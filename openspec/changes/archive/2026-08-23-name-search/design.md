@@ -12,6 +12,7 @@ table in `docs/03`.
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Add `pg_trgm` and the GIN index in an isolated migration (no touch to existing schema)
 - Implement `GET /search?q=` scoped to the owner's `dataRoomId`, returning up to 50 `SearchHit`s with paths
 - Debounced `SearchInput` in the header, 300 ms, minimum 3 characters before querying
@@ -21,6 +22,7 @@ table in `docs/03`.
 - Validation script `scripts/validate/name-search.sh`
 
 **Non-Goals:**
+
 - Search inside a shared view (share principals use `/nodes/:id/children`; FR-SRCH-010 is
   owner-only — adding it to shares is a separate decision requiring scope design)
 - Relevance ranking or full-text search (trigram similarity is enough for name substring at 100 k files)

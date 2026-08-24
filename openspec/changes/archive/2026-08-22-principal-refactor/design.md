@@ -6,6 +6,7 @@ defines `CAPABILITIES`, `assertCapability`, and both principal shapes. `NodeScop
 already runs the ancestor walk for a share principal.
 
 Two enforcement gaps remain before sharing ships:
+
 1. `FilesService.uploadFile` omits `assertCapability(principal, 'write')`.
 2. `RESTRICTED` shares skip the grantee check — any caller with the token is admitted.
 
@@ -15,6 +16,7 @@ Two error codes documented in docs/03 are not yet emittable: `SIGN_IN_REQUIRED` 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Close the `uploadFile` capability gap so every mutating handler asserts `write`.
 - Enforce `RESTRICTED` grantee check in the guard: `SIGN_IN_REQUIRED` for anonymous callers;
   `NOT_FOUND` for signed-in callers with the wrong email (BR-010).
@@ -23,6 +25,7 @@ Two error codes documented in docs/03 are not yet emittable: `SIGN_IN_REQUIRED` 
 - Extend `jwt-auth.guard.spec.ts` and add `share-capability.spec.ts` to prove BR-070.
 
 **Non-Goals:**
+
 - Sharing UI, share creation/revocation endpoints, `/s/{token}` view — slice 10.
 - Any schema change (`Share.role` is already in the first migration).
 - No additional capabilities beyond VIEWER and EDITOR.

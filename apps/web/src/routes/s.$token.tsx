@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Folder, FileIcon, Download, ShieldAlert, FolderX, LogIn } from 'lucide-react';
 import { FileViewer, ViewerContent } from '../components/FileViewer';
 
-
 export const Route = createFileRoute('/s/$token')({
   component: SharedView,
 });
@@ -84,7 +83,12 @@ function SharedFileView({
 
       {/* File card */}
       <main className="flex-1 relative flex items-center justify-center overflow-hidden bg-muted/30">
-        <ViewerContent file={node} shareToken={shareToken} onDownload={handleDownload} />
+        <ViewerContent
+          key={node.id}
+          file={node}
+          shareToken={shareToken}
+          onDownload={handleDownload}
+        />
       </main>
     </div>
   );
@@ -104,8 +108,7 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
 
   const { data: pathData = [] } = useQuery({
     queryKey: ['shared', shareToken, 'path', currentFolderId],
-    queryFn: () =>
-      fetchShareClient<Breadcrumb[]>(shareToken, `/nodes/${currentFolderId}/path`),
+    queryFn: () => fetchShareClient<Breadcrumb[]>(shareToken, `/nodes/${currentFolderId}/path`),
     enabled: !!currentFolderId,
   });
 
@@ -115,8 +118,7 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
     error,
   } = useQuery({
     queryKey: ['shared', shareToken, 'children', currentFolderId],
-    queryFn: () =>
-      fetchShareClient<Page<FsNode>>(shareToken, `/nodes/${currentFolderId}/children`),
+    queryFn: () => fetchShareClient<Page<FsNode>>(shareToken, `/nodes/${currentFolderId}/children`),
     enabled: !!currentFolderId,
   });
 
@@ -132,7 +134,7 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
 
   let onPrev: (() => void) | undefined;
   let onNext: (() => void) | undefined;
-  
+
   if (viewingFile) {
     const files = items.filter((n) => n.type === 'FILE');
     const idx = files.findIndex((n) => n.id === viewingFile.id);
@@ -143,10 +145,7 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
   const handleDownload = async (node: FsNode) => {
     if (node.type !== 'FILE') return;
     try {
-      const res = await fetchShareClient<{ url: string }>(
-        shareToken,
-        `/files/${node.id}/download`,
-      );
+      const res = await fetchShareClient<{ url: string }>(shareToken, `/files/${node.id}/download`);
       window.open(res.url, '_blank');
     } catch {
       // silently fail — the toast would require a provider
@@ -237,9 +236,7 @@ function SharedViewShell({ shareToken, rootNodeId, ownerEmail }: SharedViewShell
               <Folder className="h-12 w-12 text-muted-foreground/50" />
             </div>
             <h3 className="text-lg font-semibold mb-1">This folder is empty</h3>
-            <p className="text-sm text-muted-foreground">
-              There are no files or folders here yet.
-            </p>
+            <p className="text-sm text-muted-foreground">There are no files or folders here yet.</p>
           </div>
         ) : (
           <table className="w-full text-sm text-left">
@@ -348,11 +345,48 @@ function SharedView() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">Loading shared content…</p>
-        </div>
+      <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
+        <header className="h-14 border-b flex items-center px-4 shrink-0 gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </header>
+        <nav className="border-b px-4 py-2 flex items-center text-sm text-muted-foreground overflow-hidden">
+          <Skeleton className="h-5 w-32" />
+        </nav>
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase border-b">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium hidden sm:table-cell">Modified</th>
+                  <th className="px-4 py-3 font-medium hidden md:table-cell">Size</th>
+                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <tr key={i} className="border-b">
+                    <td className="px-4 py-3 flex items-center gap-3">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      <Skeleton className="h-4 w-48" />
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <Skeleton className="h-4 w-16" />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Skeleton className="h-8 w-8 rounded-md ml-auto" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </main>
       </div>
     );
   }
@@ -372,20 +406,10 @@ function SharedView() {
 
   // A file share shows a single-file download card; a folder share shows the listing shell.
   if (data.node.type === 'FILE') {
-    return (
-      <SharedFileView
-        node={data.node}
-        shareToken={token}
-        ownerEmail={data.ownerEmail}
-      />
-    );
+    return <SharedFileView node={data.node} shareToken={token} ownerEmail={data.ownerEmail} />;
   }
 
   return (
-    <SharedViewShell
-      shareToken={token}
-      rootNodeId={data.rootNodeId}
-      ownerEmail={data.ownerEmail}
-    />
+    <SharedViewShell shareToken={token} rootNodeId={data.rootNodeId} ownerEmail={data.ownerEmail} />
   );
 }

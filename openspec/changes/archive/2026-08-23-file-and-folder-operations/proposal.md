@@ -31,16 +31,19 @@ existing endpoint, adds the cycle check server-side, and builds the Move dialog 
 ## Capabilities
 
 ### New Capabilities
+
 - `files/move`: "Move to…" dialog with tree picker, drag-onto-folder gesture, cycle check enforcement
 - `files/delete-confirm`: Confirm dialog with BR-030 stats (file count, size, active share count)
 - `files/rename`: Inline rename for files in the listing
 
 ### Modified Capabilities
+
 - `folders`: FR-FLDR-020 (rename) and FR-FLDR-040 (move + cycle check) are now UI-wired
 
 ## Non-goals
 
 This change does not touch:
+
 - **Multi-select** (slice 14, Polish) — Move and Delete act on a single selection only.
 - **Copy/paste** (slice 15, Polish) — no `POST /nodes/copy` wiring.
 - **Keyboard navigation** (slice 16, Polish) — F2 and Delete keys are wired here as they are Core

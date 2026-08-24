@@ -15,7 +15,7 @@ The MVP is feature-complete but requires comprehensive end-to-end (e2e) tests to
 
 ### Modified Capabilities
 
-- 
+-
 
 ## Impact
 

@@ -81,7 +81,7 @@ export class SearchService {
       FROM search_hits sh;
     `;
 
-    return hits.map(hit => ({
+    return hits.map((hit) => ({
       id: hit.id,
       parentId: hit.parentId,
       type: hit.type as 'FILE' | 'FOLDER',

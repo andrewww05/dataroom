@@ -117,14 +117,20 @@ export function useUploadFiles() {
 
 export async function downloadFile(fileId: string, shareToken?: string) {
   const res = shareToken
-    ? await fetchShareClient<{ url: string; expiresAt: string }>(shareToken, `/files/${fileId}/download`)
+    ? await fetchShareClient<{ url: string; expiresAt: string }>(
+        shareToken,
+        `/files/${fileId}/download`,
+      )
     : await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/download`);
   return res.url;
 }
 
 export async function previewFile(fileId: string, shareToken?: string) {
   const res = shareToken
-    ? await fetchShareClient<{ url: string; expiresAt: string }>(shareToken, `/files/${fileId}/preview`)
+    ? await fetchShareClient<{ url: string; expiresAt: string }>(
+        shareToken,
+        `/files/${fileId}/preview`,
+      )
     : await fetchClient<{ url: string; expiresAt: string }>(`/files/${fileId}/preview`);
   return res.url;
 }

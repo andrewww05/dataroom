@@ -31,13 +31,7 @@ describe('RenameDialog', () => {
       isError: false,
     });
 
-    render(
-      <RenameDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        node={mockNode}
-      />,
-    );
+    render(<RenameDialog open={true} onOpenChange={vi.fn()} node={mockNode} />);
 
     const input = screen.getByDisplayValue('document.pdf');
     expect(input).toHaveValue('document.pdf');
@@ -47,7 +41,7 @@ describe('RenameDialog', () => {
 
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'renamed-doc.pdf' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

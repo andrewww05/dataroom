@@ -29,9 +29,7 @@ export const useUploads = create<UploadState>((set) => ({
     })),
   updateStatus: (id, status, error) =>
     set((state) => ({
-      uploads: state.uploads.map((u) =>
-        u.id === id ? { ...u, status, error } : u
-      ),
+      uploads: state.uploads.map((u) => (u.id === id ? { ...u, status, error } : u)),
     })),
   clearCompleted: () =>
     set((state) => ({

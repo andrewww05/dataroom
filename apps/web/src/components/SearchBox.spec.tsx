@@ -41,11 +41,11 @@ describe('SearchBox', () => {
     render(<SearchBox />);
 
     const input = screen.getByPlaceholderText(/search/i);
-    
+
     // Type 2 characters
     fireEvent.change(input, { target: { value: 'ab' } });
     expect(searchHook.useSearch).toHaveBeenCalledWith('ab'); // Hook is always called, but UI only shows when >= 3
-    
+
     // Type 3 characters
     fireEvent.change(input, { target: { value: 'abc' } });
     expect(searchHook.useSearch).toHaveBeenCalledWith('abc');
@@ -65,10 +65,10 @@ describe('SearchBox', () => {
     render(<SearchBox />);
 
     const input = screen.getByPlaceholderText(/search/i);
-    
+
     fireEvent.change(input, { target: { value: 'abc' } });
     expect(screen.getByText(/No results found/i)).toBeInTheDocument();
-    
+
     // Clear input
     fireEvent.change(input, { target: { value: '' } });
     expect(screen.queryByText(/No results found/i)).not.toBeInTheDocument();

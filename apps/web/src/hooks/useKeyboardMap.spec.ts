@@ -27,7 +27,13 @@ describe('useKeyboardMap', () => {
   });
 
   const fireKey = (key: string, ctrlKey = false, shiftKey = false, target?: HTMLElement) => {
-    const event = new KeyboardEvent('keydown', { key, ctrlKey, shiftKey, metaKey: ctrlKey, bubbles: true });
+    const event = new KeyboardEvent('keydown', {
+      key,
+      ctrlKey,
+      shiftKey,
+      metaKey: ctrlKey,
+      bubbles: true,
+    });
     if (target) {
       target.dispatchEvent(event);
     } else {

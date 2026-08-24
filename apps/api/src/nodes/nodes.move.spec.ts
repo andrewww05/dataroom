@@ -45,10 +45,7 @@ describe('Node move operations (BR-060)', () => {
   }
 
   const post = (path: string, body: object) =>
-    request(app.getHttpServer())
-      .post(path)
-      .send(body)
-      .set('Authorization', `Bearer ${token}`);
+    request(app.getHttpServer()).post(path).send(body).set('Authorization', `Bearer ${token}`);
 
   it('rejects a self-move with INVALID_MOVE', async () => {
     const folderA = await folder(rootId, 'self-move-test');

@@ -9,10 +9,7 @@ export class DataRoomsController {
   constructor(private readonly dataRooms: DataRoomsService) {}
 
   @Get(':id/usage')
-  getUsage(
-    @CurrentPrincipal() principal: Principal,
-    @Param('id') id: string,
-  ): Promise<RoomUsage> {
+  getUsage(@CurrentPrincipal() principal: Principal, @Param('id') id: string): Promise<RoomUsage> {
     return this.dataRooms.getUsage(principal, id);
   }
 }

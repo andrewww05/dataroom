@@ -18,7 +18,7 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
   let ownerToken: string;
   let ownerDataRoomId: string;
   let ownerRootId: string;
-  
+
   let otherToken: string;
   let otherRootId: string;
 
@@ -55,23 +55,23 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
     });
     return row.id;
   }
-  
+
   async function file(parentId: string, name: string, content: string): Promise<string> {
     const id = randomUUID();
     const storageKey = `${ownerDataRoomId}/${id}`;
-    
+
     await storage.putObject(storageKey, Buffer.from(content), 'text/plain');
-    
+
     const row = await prisma.node.create({
-      data: { 
+      data: {
         id,
-        dataRoomId: ownerDataRoomId, 
-        parentId, 
-        type: 'FILE', 
+        dataRoomId: ownerDataRoomId,
+        parentId,
+        type: 'FILE',
         name,
         sizeBytes: content.length,
         mimeType: 'text/plain',
-        storageKey
+        storageKey,
       },
       select: { id: true },
     });
@@ -79,10 +79,7 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
   }
 
   const post = (path: string, body: object, tokenToUse = ownerToken) =>
-    request(app.getHttpServer())
-      .post(path)
-      .send(body)
-      .set('Authorization', `Bearer ${tokenToUse}`);
+    request(app.getHttpServer()).post(path).send(body).set('Authorization', `Bearer ${tokenToUse}`);
 
   it('owner-copies-file', async () => {
     const target = await folder(ownerRootId, 'target-for-file');
@@ -117,7 +114,7 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
     }).expect(201);
 
     expect(response.body).toHaveLength(1);
-    
+
     // Check subtree was copied
     const children = await prisma.node.findMany({ where: { parentId: response.body[0].id } });
     expect(children).toHaveLength(2);
@@ -138,10 +135,14 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
   it('rejects with NOT_FOUND for a foreign id', async () => {
     const foreignFolder = await folder(ownerRootId, 'foreign');
 
-    const response = await post(`/${API_PREFIX}/nodes/copy`, {
-      ids: [foreignFolder],
-      targetId: otherRootId, // foreign folder id inside other user's request
-    }, otherToken).expect(404);
+    const response = await post(
+      `/${API_PREFIX}/nodes/copy`,
+      {
+        ids: [foreignFolder],
+        targetId: otherRootId, // foreign folder id inside other user's request
+      },
+      otherToken,
+    ).expect(404);
 
     expect(response.body.code).toBe('NOT_FOUND');
   });
@@ -149,14 +150,14 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
   it('rejects with READ_ONLY for a share token', async () => {
     const targetFolder = await folder(ownerRootId, 'share-target');
     const shareNode = await folder(ownerRootId, 'share-source');
-    
+
     // Create share token
     const shareRes = await request(app.getHttpServer())
       .post(`/${API_PREFIX}/shares`)
       .send({ nodeId: shareNode, mode: 'PUBLIC' })
       .set('Authorization', `Bearer ${ownerToken}`)
       .expect(201);
-      
+
     const shareToken = shareRes.body.token;
 
     const response = await request(app.getHttpServer())
@@ -192,11 +193,11 @@ describe('Node copy operations (FR-FILE-060, BR-060)', () => {
       ids: [parent],
       targetId: target,
     }).expect(500);
-    
+
     // Because we mocked copyObject, the first object was copied, but the transaction aborted so it should have been deleted by catch
     // The spy cleanup restores original copy
     jest.restoreAllMocks();
-    
+
     // Ensure the new node row was not created in target
     const childrenInTarget = await prisma.node.findMany({ where: { parentId: target } });
     expect(childrenInTarget).toHaveLength(0);

@@ -58,9 +58,7 @@ export function SearchBox() {
       {isOpen && query.trim().length >= 3 && data && (
         <div className="absolute top-full left-0 z-50 mt-1 max-h-96 w-full overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md outline-none">
           {data.items.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              No results found.
-            </div>
+            <div className="py-6 text-center text-sm text-muted-foreground">No results found.</div>
           ) : (
             <ul className="flex flex-col p-1">
               {data.items.map((hit) => (
@@ -88,9 +86,7 @@ export function SearchBox() {
                     </div>
                     <div className="flex items-center gap-1 px-6 text-xs text-muted-foreground">
                       <span className="truncate">
-                        {hit.path.length > 0
-                          ? hit.path.map((p) => p.name).join(' / ')
-                          : 'Home'}
+                        {hit.path.length > 0 ? hit.path.map((p) => p.name).join(' / ') : 'Home'}
                       </span>
                     </div>
                   </button>

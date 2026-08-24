@@ -43,6 +43,7 @@ the existing `argon2.hash` for the password. Reads `SEED_DEMO_EMAIL` (default
 `demo@example.com`) and `SEED_DEMO_PASSWORD` (default `demodemo1`) from the environment.
 
 Structure created:
+
 - User + DataRoom (`"Demo's Data Room"`)
 - Root folder (exists from signup-style creation)
 - `Q3 Diligence/` — subfolder containing `Financial Summary.pdf`, `Revenue Forecast.csv`
@@ -59,10 +60,12 @@ name matches and exits 0. If the name does not match, it exits 1 with a message 
 If not found, it creates everything in one Prisma `$transaction`.
 
 **Env vars added to `.env.example`:**
+
 ```
 # SEED_DEMO_EMAIL=demo@example.com
 # SEED_DEMO_PASSWORD=demodemo1
 ```
+
 Commented out: the seed reads them with defaults, so they are optional.
 
 ### BR-* invariants touched
@@ -78,9 +81,10 @@ Commented out: the seed reads them with defaults, so they are optional.
 - **FR-OPS-030** — login with demo credentials returns 200; the Data Room listing contains at
   least one folder.
 - **FR-OPS-020** — `README.md` contains the strings `How it scales`, `ERD`, `Running it somewhere
-  else`, and `AI`.
+else`, and `AI`.
 
 **Cannot prove at runtime (manual checklist the script prints):**
+
 - The ERD renders correctly on GitHub (mermaid).
 - Setup from a truly clean clone (the validation runs against an already-running stack).
 

@@ -2,13 +2,22 @@ import { useUsage } from '@/hooks/useUsage';
 import { useAuth } from '@/hooks/useAuth';
 import { formatBytes } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function StorageFooter() {
   const { dataRoom } = useAuth();
   const { data: usage, isLoading } = useUsage(dataRoom?.id);
 
   if (!dataRoom || isLoading || !usage) {
-    return <div className="p-4 border-t shrink-0 h-24" />;
+    return (
+      <div className="p-4 border-t shrink-0 h-24">
+        <div className="flex items-center justify-between mb-2 text-xs">
+          <span className="font-medium text-muted-foreground">Storage</span>
+          <Skeleton className="h-3 w-16" />
+        </div>
+        <Skeleton className="h-2 w-full mt-1" />
+      </div>
+    );
   }
 
   const quotaBytes = 5 * 1024 * 1024 * 1024;
@@ -23,10 +32,7 @@ export function StorageFooter() {
           {formatBytes(usage.bytes)} / {formatBytes(quotaBytes)}
         </span>
       </div>
-      <Progress
-        value={percentage}
-        className={`h-2 ${isDanger ? '[&>div]:bg-destructive' : ''}`}
-      />
+      <Progress value={percentage} className={`h-2 ${isDanger ? '[&>div]:bg-destructive' : ''}`} />
     </div>
   );
 }

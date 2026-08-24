@@ -4,6 +4,7 @@ import { File as FileIcon, Folder as FolderIcon, Info, Download, Trash2 } from '
 import { formatBytes } from '../lib/utils';
 import { ViewerContent } from './FileViewer';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
 import { fetchClient } from '../api/client';
 import type { Page, FsNode } from '@dataroom/shared';
@@ -37,7 +38,7 @@ export function DetailsPane() {
   }
 
   if (selectedNodesList.length > 1) {
-    const foldersOnly = selectedNodesList.every(n => n.type === 'FOLDER');
+    const foldersOnly = selectedNodesList.every((n) => n.type === 'FOLDER');
     return (
       <aside className="w-72 border-l bg-muted/10 h-full hidden lg:flex flex-col shrink-0">
         <div className="p-4 border-b h-14 flex items-center shrink-0">
@@ -49,17 +50,41 @@ export function DetailsPane() {
             {selectedNodesList.length} items selected
           </div>
           <div className="flex flex-col w-full gap-2 px-2">
-            <Button variant="outline" className="w-full justify-start" onClick={() => document.dispatchEvent(new CustomEvent('dataroom:move', { detail: selectedNodesList }))}>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() =>
+                document.dispatchEvent(
+                  new CustomEvent('dataroom:move', { detail: selectedNodesList }),
+                )
+              }
+            >
               <FolderIcon className="h-4 w-4 mr-2" />
               Move
             </Button>
             {!foldersOnly && (
-              <Button variant="outline" className="w-full justify-start" onClick={() => document.dispatchEvent(new CustomEvent('dataroom:download-bulk', { detail: selectedNodesList }))}>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() =>
+                  document.dispatchEvent(
+                    new CustomEvent('dataroom:download-bulk', { detail: selectedNodesList }),
+                  )
+                }
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Download
               </Button>
             )}
-            <Button variant="destructive" className="w-full justify-start" onClick={() => document.dispatchEvent(new CustomEvent('dataroom:delete', { detail: selectedNodesList }))}>
+            <Button
+              variant="destructive"
+              className="w-full justify-start"
+              onClick={() =>
+                document.dispatchEvent(
+                  new CustomEvent('dataroom:delete', { detail: selectedNodesList }),
+                )
+              }
+            >
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </Button>
@@ -133,6 +158,7 @@ export function DetailsPane() {
         {node.type === 'FILE' && (
           <div className="mt-4 border rounded-md overflow-hidden bg-background aspect-square relative flex items-center justify-center">
             <ViewerContent
+              key={node.id}
               file={node}
               onDownload={async () => {
                 const url = await downloadFile(node.id);
@@ -150,7 +176,22 @@ function FolderStats({ id }: { id: string }) {
   const { data, isLoading } = useNodeStats(id);
 
   if (isLoading) {
-    return <div className="text-muted-foreground text-sm animate-pulse">Loading stats...</div>;
+    return (
+      <div className="space-y-4">
+        <div>
+          <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-1">
+            Contents
+          </h4>
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <div>
+          <h4 className="font-medium text-xs text-muted-foreground uppercase tracking-wider mb-1">
+            Total Size
+          </h4>
+          <Skeleton className="h-5 w-24" />
+        </div>
+      </div>
+    );
   }
 
   if (!data) return null;

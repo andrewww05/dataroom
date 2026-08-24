@@ -25,13 +25,13 @@ pnpm --filter @dataroom/api db:seed
 
 ## Design decisions
 
-| Decision | Trade-off |
-| -------- | --------- |
-| One table does folders and files | Listing, moving, deleting, and name collisions are identical for both; but files have nullable `sizeBytes`/`mimeType`/`storageKey` columns. |
-| `DataRoom` as the scope column | Fast index scans for listings and permissions; queries must carry `dataRoomId` on every operation. |
-| Upload streams through the API | Server-side validation of sniffed MIME types before writing to storage; requires a persistent backend process (no serverless functions for the API). |
-| S3 API everywhere | One storage code path whether local (MinIO) or hosted; requires the `S3_ENDPOINT` to be reachable by the browser for presigned URLs. |
-| Keyset pagination | Page 500 is as fast as Page 1; no total counts are provided in directory listings. |
+| Decision                         | Trade-off                                                                                                                                            |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One table does folders and files | Listing, moving, deleting, and name collisions are identical for both; but files have nullable `sizeBytes`/`mimeType`/`storageKey` columns.          |
+| `DataRoom` as the scope column   | Fast index scans for listings and permissions; queries must carry `dataRoomId` on every operation.                                                   |
+| Upload streams through the API   | Server-side validation of sniffed MIME types before writing to storage; requires a persistent backend process (no serverless functions for the API). |
+| S3 API everywhere                | One storage code path whether local (MinIO) or hosted; requires the `S3_ENDPOINT` to be reachable by the browser for presigned URLs.                 |
+| Keyset pagination                | Page 500 is as fast as Page 1; no total counts are provided in directory listings.                                                                   |
 
 ## ERD
 
@@ -89,6 +89,7 @@ erDiagram
 One recursive CTE, seeded at the folder and walking `"parentId"` downward. It is depth-independent and costs one index scan per level, so it is `O(nodes in the subtree)`: microseconds for a normal folder, and a real cost only at the root of a very large room. It is called on demand, not per row of a listing, and cached.
 
 When that stops being fast enough, in order of what I would reach for:
+
 1. **Cached aggregates on the folder row** updated in the same transaction as the write that changed them (ancestor depth is capped at 32).
 2. **A materialised path** (`ltree` or `path` text column), making subtree reads index-only prefix scans.
 3. **A closure table** if arbitrary ancestor questions become common.
@@ -96,6 +97,7 @@ When that stops being fast enough, in order of what I would reach for:
 ### One Data Room holding 100,000 files
 
 Listing never depends on room size, because a listing is one folder's children and is paged:
+
 - **Pagination is keyset, not offset.** `(type, name, id) > cursor` walks the index directly; page 500 costs what page 1 costs.
 - **The listing index is the sort order**, avoiding a sort node.
 - **No total counts in listings.**
@@ -104,6 +106,7 @@ Listing never depends on room size, because a listing is one folder's children a
 - **`dataRoomId` leads every index**, so a second room, or a hundred, never widens the range.
 
 Two things at 100,000 files that would have to change:
+
 - **Deleting a huge subtree:** The cascade delete is fast; issuing `DeleteObjects` for 100,000 keys is not. A `PendingBlobDeletion` table swept by a background job would be needed.
 - **Upload throughput:** Every byte goes through one API process. Presigned direct-to-bucket `PUT`s fix it, moving validation to a post-upload check.
 
@@ -115,23 +118,23 @@ Already in the schema: `Share.role` is a `ShareRole` defaulting to `VIEWER`. Han
 
 **This plan deploys nothing and picks no host.** The deliverable runs locally from a clean clone and carries no vendor in its code, so whoever wants it on a server chooses where. The contract a host must satisfy:
 
-| Piece      | What it needs                     | Why                                                                                                                                                                                                |
-| ---------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` | Anything that serves static files | It is a static Vite build. `VITE_API_URL` points at the API origin, so the dev-only `/api` proxy has no counterpart to go wrong.                                                                   |
+| Piece      | What it needs                     | Why                                                                                                                                                                                               |
+| ---------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web` | Anything that serves static files | It is a static Vite build. `VITE_API_URL` points at the API origin, so the dev-only `/api` proxy has no counterpart to go wrong.                                                                  |
 | `apps/api` | A **persistent** Node process     | Uploads stream through Nest so validation runs on sniffed bytes. A serverless function caps the request body far below 100 MB, so the API cannot be one without giving up server-side validation. |
-| Postgres   | Any Postgres 17                   | `DATABASE_URL` at runtime, `DIRECT_URL` for `prisma migrate deploy` — the same split works whether or not a pooler is in front.                                                                    |
-| Blobs      | Any S3-compatible bucket, private | The MinIO code path is the only code path; every read is a presigned URL.                                                                                                                          |
+| Postgres   | Any Postgres 17                   | `DATABASE_URL` at runtime, `DIRECT_URL` for `prisma migrate deploy` — the same split works whether or not a pooler is in front.                                                                   |
+| Blobs      | Any S3-compatible bucket, private | The MinIO code path is the only code path; every read is a presigned URL.                                                                                                                         |
 
 ## AI usage
 
 AI was used throughout this project, and the split of work was deliberate: one tool for thinking, another for typing.
 
-| Stage                                        | Tool                                          | What it did                                                                                                                                                                    |
-| -------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Design and decomposition (`docs/`)           | **Claude Code**                               | I designed the system with Claude as a thinking partner: scope and tiers, numbered requirements and business rules, the domain model and REST surface, the UX, and the build order. Everything in `docs/` came out of that dialogue and is the source of truth the rest of the work is held to. |
-| Specs per slice (`openspec/`)                | **Claude Code**                               | Slice by slice down `docs/05-build-order.md`, I iterated with Claude to turn each slice into an OpenSpec change — proposal, design notes, delta specs with `FR-*`/`BR-*` scenario IDs, and a task list — then synced and archived it once it shipped.                                          |
-| Implementation                               | **Gemini** (via **Antigravity**, free tier)   | The code itself was written with Gemini in Antigravity, driven by the specs above. The whole implementation was done on the free tier.                                                                                                                                                        |
-| Validation                                   | Both, plus hand-verification                  | Each change ships `scripts/validate/<change-name>.sh`, which exercises its `FR-*`/`BR-*` scenarios against the running app (real Postgres, real MinIO, real HTTP), on top of `pnpm verify`. Nothing was archived on a green unit-test run alone.                                               |
+| Stage                              | Tool                                        | What it did                                                                                                                                                                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Design and decomposition (`docs/`) | **Claude Code**                             | I designed the system with Claude as a thinking partner: scope and tiers, numbered requirements and business rules, the domain model and REST surface, the UX, and the build order. Everything in `docs/` came out of that dialogue and is the source of truth the rest of the work is held to. |
+| Specs per slice (`openspec/`)      | **Claude Code**                             | Slice by slice down `docs/05-build-order.md`, I iterated with Claude to turn each slice into an OpenSpec change — proposal, design notes, delta specs with `FR-*`/`BR-*` scenario IDs, and a task list — then synced and archived it once it shipped.                                           |
+| Implementation                     | **Gemini** (via **Antigravity**, free tier) | The code itself was written with Gemini in Antigravity, driven by the specs above. The whole implementation was done on the free tier.                                                                                                                                                          |
+| Validation                         | Both, plus hand-verification                | Each change ships `scripts/validate/<change-name>.sh`, which exercises its `FR-*`/`BR-*` scenarios against the running app (real Postgres, real MinIO, real HTTP), on top of `pnpm verify`. Nothing was archived on a green unit-test run alone.                                                |
 
 What that means in practice: the architecture, the requirement IDs and the slicing are mine, arrived at with Claude; the keystrokes are largely Gemini's; and every slice had to pass its own runtime validation script before it counted as done.
 

@@ -145,11 +145,7 @@ export class ReadOnlyException extends ApiException {
 
 export class SignInRequiredException extends ApiException {
   constructor() {
-    super(
-      HttpStatus.UNAUTHORIZED,
-      ErrorCode.SIGN_IN_REQUIRED,
-      'Sign in to access this share.',
-    );
+    super(HttpStatus.UNAUTHORIZED, ErrorCode.SIGN_IN_REQUIRED, 'Sign in to access this share.');
   }
 }
 

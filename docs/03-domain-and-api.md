@@ -294,33 +294,33 @@ Everything under `/api` (the `API_PREFIX` in `packages/shared`). All routes requ
 `@Public()` escape, so a route added without an annotation is closed rather than open. **Tier**
 marks what is Core.
 
-| Method | Path                    | Body / query                                  | Returns                                                                                         | Tier   |
-| ------ | ----------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------ |
-| POST   | `/auth/signup`          | `{ email, password }`                         | `{ token, user, dataRoom }`                                                                     | Core   |
-| POST   | `/auth/login`           | `{ email, password }`                         | `{ token, user, dataRoom }`                                                                     | Core   |
-| GET    | `/auth/me`              | —                                             | `{ id, email, dataRoom: { id, name, rootId } }`                                                 | Core   |
-| PATCH  | `/data-rooms/:id`       | `{ name }`                                    | `DataRoom`                                                                                      | Core   |
-| GET    | `/nodes/:id`            | —                                             | `FsNode`                                                                                        | Core   |
-| GET    | `/nodes/:id/children`   | `?cursor&limit&type`                          | `{ items: FsNode[], nextCursor }`                                                               | Core   |
-| GET    | `/nodes/:id/path`       | —                                             | `Breadcrumb[]`, shared root or Data Room first                                                  | Core   |
-| GET    | `/nodes/:id/stats`      | —                                             | `{ folders, files, bytes }`                                                                     | Core   |
-| POST   | `/nodes/folders`        | `{ parentId, name }`                          | `FsNode`                                                                                        | Core   |
-| PATCH  | `/nodes/:id`            | `{ name }`                                    | `FsNode`                                                                                        | Core   |
-| POST   | `/nodes/move`           | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Core   |
-| DELETE | `/nodes/:id`            | —                                             | `204`                                                                                           | Core   |
-| POST   | `/files`                | multipart: `parentId`, `file`                 | `FsNode`                                                                                        | Core   |
-| GET    | `/files/:id/download`   | Download a file                               | `200` `PresignedUrl`                                                                            | Core   |
-| GET    | `/files/:id/preview`    | Preview a file in the browser (FR-VIEW-060)*  | `200` `PresignedUrl`                                                                            | Core   |
-| POST   | `/shares`               | `{ nodeId, mode, granteeEmail?, expiresAt? }` | `Share`                                                                                         | Core   |
-| GET    | `/nodes/:id/shares`     | —                                             | `NodeShares`                                                                                    | Core   |
-| DELETE | `/shares/:id`           | —                                             | `204`                                                                                           | Core   |
-| GET    | `/shares/resolve`       | `?token`                                      | `{ node, mode, role, rootNodeId, ownerEmail }` — the only route a share token may call unscoped | Core   |
-| GET    | `/shares/preview/:token`| —                                             | `200` `text/html` with Open Graph tags for rich previews                                        | Core   |
-| GET    | `/shares/received`      | —                                             | `ReceivedShare[]` (FR-SHARE-080)                                                                | Core   |
-| GET    | `/health`               | —                                             | `{ status, uptimeSeconds }`                                                                     | Core   |
-| POST   | `/nodes/copy`           | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Polish |
-| GET    | `/data-rooms/:id/usage` | —                                             | `{ bytes, files }`                                                                              | Polish |
-| GET    | `/search`               | `?q`                                          | `{ items: SearchHit[] }`                                                                        | Extra  |
+| Method | Path                     | Body / query                                  | Returns                                                                                         | Tier   |
+| ------ | ------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------ |
+| POST   | `/auth/signup`           | `{ email, password }`                         | `{ token, user, dataRoom }`                                                                     | Core   |
+| POST   | `/auth/login`            | `{ email, password }`                         | `{ token, user, dataRoom }`                                                                     | Core   |
+| GET    | `/auth/me`               | —                                             | `{ id, email, dataRoom: { id, name, rootId } }`                                                 | Core   |
+| PATCH  | `/data-rooms/:id`        | `{ name }`                                    | `DataRoom`                                                                                      | Core   |
+| GET    | `/nodes/:id`             | —                                             | `FsNode`                                                                                        | Core   |
+| GET    | `/nodes/:id/children`    | `?cursor&limit&type`                          | `{ items: FsNode[], nextCursor }`                                                               | Core   |
+| GET    | `/nodes/:id/path`        | —                                             | `Breadcrumb[]`, shared root or Data Room first                                                  | Core   |
+| GET    | `/nodes/:id/stats`       | —                                             | `{ folders, files, bytes }`                                                                     | Core   |
+| POST   | `/nodes/folders`         | `{ parentId, name }`                          | `FsNode`                                                                                        | Core   |
+| PATCH  | `/nodes/:id`             | `{ name }`                                    | `FsNode`                                                                                        | Core   |
+| POST   | `/nodes/move`            | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Core   |
+| DELETE | `/nodes/:id`             | —                                             | `204`                                                                                           | Core   |
+| POST   | `/files`                 | multipart: `parentId`, `file`                 | `FsNode`                                                                                        | Core   |
+| GET    | `/files/:id/download`    | Download a file                               | `200` `PresignedUrl`                                                                            | Core   |
+| GET    | `/files/:id/preview`     | Preview a file in the browser (FR-VIEW-060)*  | `200` `PresignedUrl`                                                                            | Core   |
+| POST   | `/shares`                | `{ nodeId, mode, granteeEmail?, expiresAt? }` | `Share`                                                                                         | Core   |
+| GET    | `/nodes/:id/shares`      | —                                             | `NodeShares`                                                                                    | Core   |
+| DELETE | `/shares/:id`            | —                                             | `204`                                                                                           | Core   |
+| GET    | `/shares/resolve`        | `?token`                                      | `{ node, mode, role, rootNodeId, ownerEmail }` — the only route a share token may call unscoped | Core   |
+| GET    | `/shares/preview/:token` | —                                             | `200` `text/html` with Open Graph tags for rich previews                                        | Core   |
+| GET    | `/shares/received`       | —                                             | `ReceivedShare[]` (FR-SHARE-080)                                                                | Core   |
+| GET    | `/health`                | —                                             | `{ status, uptimeSeconds }`                                                                     | Core   |
+| POST   | `/nodes/copy`            | `{ ids: string[], targetId }`                 | `FsNode[]`                                                                                      | Polish |
+| GET    | `/data-rooms/:id/usage`  | —                                             | `{ bytes, files }`                                                                              | Polish |
+| GET    | `/search`                | `?q`                                          | `{ items: SearchHit[] }`                                                                        | Extra  |
 
 Move and copy take arrays because FR-FILE-070 acts on a selection; each item resolves its own
 name conflict under BR-020, and the response carries the names actually used.

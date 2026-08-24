@@ -22,8 +22,7 @@ export const Route = createFileRoute('/login')({
     // Only a same-origin path is accepted. Without this the form would be an open redirect: an
     // attacker-supplied `?next=https://evil.example` would send a freshly signed-in user, and the
     // trust that comes with having just authenticated, straight off the site.
-    const isInAppPath =
-      typeof next === 'string' && next.startsWith('/') && !next.startsWith('//');
+    const isInAppPath = typeof next === 'string' && next.startsWith('/') && !next.startsWith('//');
 
     return isInAppPath ? { next } : {};
   },

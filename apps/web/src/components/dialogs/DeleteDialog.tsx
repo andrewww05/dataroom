@@ -26,14 +26,14 @@ interface DeleteImpactProps {
 
 function DeleteImpact({ nodes }: DeleteImpactProps) {
   const folderNodes = nodes.filter((n) => n.type === 'FOLDER');
-  
+
   const statsQueries = useQueries({
     queries: folderNodes.map((n) => ({
       queryKey: ['nodes', n.id, 'stats'],
       queryFn: () => fetchClient<NodeStats>(`/nodes/${n.id}/stats`),
     })),
   });
-  
+
   const sharesQueries = useQueries({
     queries: nodes.map((n) => ({
       queryKey: ['shares', n.id],
@@ -43,14 +43,14 @@ function DeleteImpact({ nodes }: DeleteImpactProps) {
 
   const statsLoading = statsQueries.some((q) => q.isLoading);
   const sharesLoading = sharesQueries.some((q) => q.isLoading);
-  
+
   if (statsLoading || sharesLoading) {
     return <p className="text-sm text-muted-foreground mt-4">Calculating impact...</p>;
   }
 
   const statsError = statsQueries.some((q) => q.isError);
   const sharesError = sharesQueries.some((q) => q.isError);
-  
+
   if (statsError || sharesError) {
     return <p className="text-sm text-destructive mt-4">Failed to calculate impact.</p>;
   }
@@ -63,7 +63,7 @@ function DeleteImpact({ nodes }: DeleteImpactProps) {
   nodes.forEach((n) => {
     if (n.type === 'FILE') {
       totalFiles += 1;
-      totalBytes += (n.sizeBytes || 0);
+      totalBytes += n.sizeBytes || 0;
     }
   });
 
@@ -81,9 +81,10 @@ function DeleteImpact({ nodes }: DeleteImpactProps) {
     }
   });
 
-  const text = (totalFolders === 0 && totalFiles === 1)
-    ? `This removes 1 file (${formatBytes(totalBytes)}). This cannot be undone.`
-    : `This removes ${totalFolders} folder${totalFolders === 1 ? '' : 's'} and ${totalFiles} file${totalFiles === 1 ? '' : 's'} (${formatBytes(totalBytes)}). This cannot be undone.`;
+  const text =
+    totalFolders === 0 && totalFiles === 1
+      ? `This removes 1 file (${formatBytes(totalBytes)}). This cannot be undone.`
+      : `This removes ${totalFolders} folder${totalFolders === 1 ? '' : 's'} and ${totalFiles} file${totalFiles === 1 ? '' : 's'} (${formatBytes(totalBytes)}). This cannot be undone.`;
 
   return (
     <>
@@ -114,7 +115,7 @@ export function DeleteDialog({ open, onOpenChange, nodes }: DeleteDialogProps) {
       enabled: open && nodes.length > 0,
     })),
   });
-  
+
   const sharesQueries = useQueries({
     queries: nodes.map((n) => ({
       queryKey: ['shares', n.id],
@@ -127,36 +128,35 @@ export function DeleteDialog({ open, onOpenChange, nodes }: DeleteDialogProps) {
 
   const handleDelete = async () => {
     if (nodes.length === 0) return;
-    
-    // Deleting sequentially or all at once? 
+
+    // Deleting sequentially or all at once?
     // The API deletes one node per call currently.
-    // If we have multiple nodes, we iterate and delete. 
-    // Wait, the API deletes one by one. Or does it support bulk? 
+    // If we have multiple nodes, we iterate and delete.
+    // Wait, the API deletes one by one. Or does it support bulk?
     // Wait, the task says: "Extend DeleteDialog to take FsNode[] ...".
-    
+
     for (const node of nodes) {
       try {
-        await deleteNode.mutateAsync({ 
-          id: node.id, 
-          parentId: node.parentId, 
-          ancestorIds: node.parentId ? [node.parentId] : undefined 
+        await deleteNode.mutateAsync({
+          id: node.id,
+          parentId: node.parentId,
+          ancestorIds: node.parentId ? [node.parentId] : undefined,
         });
       } catch {
         // ignorep on first error or continue?
-        // Let's continue for others or stop? 
+        // Let's continue for others or stop?
         // Typically stop on first error is safer.
         break;
       }
     }
-    
+
     if (!deleteNode.isError) {
       onOpenChange(false);
     }
   };
 
-  const nameText = nodes.length === 1 
-    ? <strong>{nodes[0].name}</strong>
-    : <strong>{nodes.length} items</strong>;
+  const nameText =
+    nodes.length === 1 ? <strong>{nodes[0].name}</strong> : <strong>{nodes.length} items</strong>;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,11 +165,7 @@ export function DeleteDialog({ open, onOpenChange, nodes }: DeleteDialogProps) {
           <DialogTitle>Delete</DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          {nodes.length > 0 && (
-            <p className="text-sm">
-              Delete {nameText}?
-            </p>
-          )}
+          {nodes.length > 0 && <p className="text-sm">Delete {nameText}?</p>}
           {nodes.length > 0 && open && <DeleteImpact nodes={nodes} />}
 
           {deleteNode.isError && (

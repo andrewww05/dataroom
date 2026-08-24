@@ -63,9 +63,7 @@ export async function fetchShareClient<T>(
   const jwt = localStorage.getItem('jwt_token');
   const headers = new Headers(options.headers);
 
-  const auth = jwt
-    ? `Share ${shareToken}, Bearer ${jwt}`
-    : `Share ${shareToken}`;
+  const auth = jwt ? `Share ${shareToken}, Bearer ${jwt}` : `Share ${shareToken}`;
   headers.set('Authorization', auth);
 
   if (!headers.has('Content-Type') && options.body && typeof options.body === 'string') {
@@ -93,4 +91,3 @@ export async function fetchShareClient<T>(
 
   return (await response.json()) as T;
 }
-

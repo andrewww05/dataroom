@@ -9,7 +9,7 @@ import { useCopyNodes } from '../hooks/useCopyNodes';
 import type { Page, FsNode } from '@dataroom/shared';
 import { Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListingSkeleton } from '@/components/skeletons';
 import { ListingToolbar } from '@/components/ListingToolbar';
 import { NewFolderDialog } from '@/components/dialogs/NewFolderDialog';
 import { RenameDialog } from '@/components/dialogs/RenameDialog';
@@ -50,7 +50,13 @@ export function FolderView() {
   const uploadFilesMutation = useUploadFiles();
   const moveNodesMutation = useMove();
   const copyNodesMutation = useCopyNodes();
-  const { ids: clipboardIds, mode: clipboardMode, sourceParentId, setClipboard, clearClipboard } = useClipboard();
+  const {
+    ids: clipboardIds,
+    mode: clipboardMode,
+    sourceParentId,
+    setClipboard,
+    clearClipboard,
+  } = useClipboard();
   const { mode: viewMode } = useViewMode();
 
   const [newFolderOpen, setNewFolderOpen] = useState(false);
@@ -79,7 +85,7 @@ export function FolderView() {
     };
     const handleDownload = async (e: Event) => {
       const nodes = (e as CustomEvent).detail as FsNode[];
-      const files = nodes.filter(n => n.type === 'FILE');
+      const files = nodes.filter((n) => n.type === 'FILE');
       for (let i = 0; i < files.length; i++) {
         // staggered download
         setTimeout(async () => {
@@ -108,10 +114,22 @@ export function FolderView() {
         // Viewer is active - handled by FileViewer onClose (or dialog natively)
         // actually FileViewer onClose is triggered by its own Dialog's Esc handling.
         // We only clear selection if we reach here and it wasn't intercepted
-        if (!newFolderOpen && !renameNode && !shareNode && moveNodesList.length === 0 && deleteNodes.length === 0) {
+        if (
+          !newFolderOpen &&
+          !renameNode &&
+          !shareNode &&
+          moveNodesList.length === 0 &&
+          deleteNodes.length === 0
+        ) {
           clear();
         }
-      } else if (!newFolderOpen && !renameNode && !shareNode && moveNodesList.length === 0 && deleteNodes.length === 0) {
+      } else if (
+        !newFolderOpen &&
+        !renameNode &&
+        !shareNode &&
+        moveNodesList.length === 0 &&
+        deleteNodes.length === 0
+      ) {
         clear();
       }
     },
@@ -173,13 +191,21 @@ export function FolderView() {
     },
     onCut: () => {
       if (selectedNodesList.length > 0 && folderId) {
-        setClipboard(selectedNodesList.map((n) => n.id), 'cut', folderId);
+        setClipboard(
+          selectedNodesList.map((n) => n.id),
+          'cut',
+          folderId,
+        );
         clear();
       }
     },
     onCopy: () => {
       if (selectedNodesList.length > 0 && folderId) {
-        setClipboard(selectedNodesList.map((n) => n.id), 'copy', folderId);
+        setClipboard(
+          selectedNodesList.map((n) => n.id),
+          'copy',
+          folderId,
+        );
         clear();
       }
     },
@@ -212,40 +238,53 @@ export function FolderView() {
 
   if (isLoading) {
     return (
-      <div className="w-full">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-muted-foreground uppercase border-b">
-            <tr>
-              <th className="px-4 py-3 w-10"></th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium hidden sm:table-cell">Modified</th>
-              <th className="px-4 py-3 font-medium hidden md:table-cell">Size</th>
-              <th className="px-4 py-3 font-medium text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <tr key={i} className="border-b">
-                <td className="px-4 py-3">
-                  <Skeleton className="h-4 w-4 rounded" />
-                </td>
-                <td className="px-4 py-3 flex items-center gap-3">
-                  <Skeleton className="h-5 w-5 rounded" />
-                  <Skeleton className="h-4 w-48" />
-                </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
-                  <Skeleton className="h-4 w-24" />
-                </td>
-                <td className="px-4 py-3 hidden md:table-cell">
-                  <Skeleton className="h-4 w-16" />
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Skeleton className="h-8 w-8 rounded-md ml-auto" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="w-full flex flex-col h-full">
+        {dataRoom?.rootId && (
+          <ListingToolbar
+            selectedNodes={selectedNodesList}
+            onCreateFolder={() => setNewFolderOpen(true)}
+            onUploadFiles={(files) => {
+              if (folderId) {
+                uploadFilesMutation.mutate({ parentId: folderId, files });
+              }
+            }}
+            onRename={(node) => setRenameNode(node)}
+            onMove={(nodes) => setMoveNodesList(nodes)}
+            onDelete={(nodes) => setDeleteNodes(nodes)}
+            onShare={(node) => setShareNode(node)}
+            onCut={(nodes) => {
+              if (folderId)
+                setClipboard(
+                  nodes.map((n) => n.id),
+                  'cut',
+                  folderId,
+                );
+              clear();
+            }}
+            onCopy={(nodes) => {
+              if (folderId)
+                setClipboard(
+                  nodes.map((n) => n.id),
+                  'copy',
+                  folderId,
+                );
+              clear();
+            }}
+            canPaste={clipboardIds.length > 0 && !!folderId}
+            onPaste={() => {
+              if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
+              if (clipboardMode === 'cut') {
+                moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+                clearClipboard();
+              } else if (clipboardMode === 'copy') {
+                copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
+              }
+            }}
+          />
+        )}
+        <div className="h-full p-4">
+          <ListingSkeleton />
+        </div>
       </div>
     );
   }
@@ -290,11 +329,21 @@ export function FolderView() {
           onDelete={(nodes) => setDeleteNodes(nodes)}
           onShare={(node) => setShareNode(node)}
           onCut={(nodes) => {
-            if (folderId) setClipboard(nodes.map(n => n.id), 'cut', folderId);
+            if (folderId)
+              setClipboard(
+                nodes.map((n) => n.id),
+                'cut',
+                folderId,
+              );
             clear();
           }}
           onCopy={(nodes) => {
-            if (folderId) setClipboard(nodes.map(n => n.id), 'copy', folderId);
+            if (folderId)
+              setClipboard(
+                nodes.map((n) => n.id),
+                'copy',
+                folderId,
+              );
             clear();
           }}
           canPaste={clipboardIds.length > 0 && !!folderId}
@@ -313,7 +362,9 @@ export function FolderView() {
       {items.length === 0 ? (
         <FolderBackgroundContextMenu
           onCreateFolder={() => setNewFolderOpen(true)}
-          onUploadFiles={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+          onUploadFiles={() =>
+            document.querySelector<HTMLInputElement>('input[type="file"]')?.click()
+          }
           canPaste={clipboardIds.length > 0 && !!folderId}
           onPaste={() => {
             if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
@@ -338,7 +389,9 @@ export function FolderView() {
       ) : (
         <FolderBackgroundContextMenu
           onCreateFolder={() => setNewFolderOpen(true)}
-          onUploadFiles={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()}
+          onUploadFiles={() =>
+            document.querySelector<HTMLInputElement>('input[type="file"]')?.click()
+          }
           canPaste={clipboardIds.length > 0 && !!folderId}
           onPaste={() => {
             if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
@@ -361,7 +414,8 @@ export function FolderView() {
                         checked={items.length > 0 && selectedIds.size === items.length}
                         ref={(input) => {
                           if (input) {
-                            input.indeterminate = selectedIds.size > 0 && selectedIds.size < items.length;
+                            input.indeterminate =
+                              selectedIds.size > 0 && selectedIds.size < items.length;
                           }
                         }}
                         onChange={(e) => {
@@ -383,7 +437,7 @@ export function FolderView() {
                   {items.map((node) => {
                     const isSelected = selectedIds.has(node.id);
                     const contextNodes = isSelected ? selectedNodesList : [node];
-                    
+
                     return (
                       <NodeContextMenu
                         key={`ctx-${node.id}`}
@@ -398,25 +452,39 @@ export function FolderView() {
                         onDelete={(nodes) => setDeleteNodes(nodes)}
                         onShare={setShareNode}
                         onCut={(nodes) => {
-                          if (folderId) setClipboard(nodes.map(n => n.id), 'cut', folderId);
+                          if (folderId)
+                            setClipboard(
+                              nodes.map((n) => n.id),
+                              'cut',
+                              folderId,
+                            );
                           clear();
                         }}
                         onCopy={(nodes) => {
-                          if (folderId) setClipboard(nodes.map(n => n.id), 'copy', folderId);
+                          if (folderId)
+                            setClipboard(
+                              nodes.map((n) => n.id),
+                              'copy',
+                              folderId,
+                            );
                           clear();
                         }}
                         canPaste={clipboardIds.length > 0 && !!folderId}
                         onPaste={() => {
                           if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
                           if (clipboardMode === 'cut') {
-                            moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+                            moveNodesMutation.mutate({
+                              ids: clipboardIds,
+                              targetId: folderId,
+                              sourceParentId,
+                            });
                             clearClipboard();
                           } else if (clipboardMode === 'copy') {
                             copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
                           }
                         }}
                         onDownload={async (nodes) => {
-                          const files = nodes.filter(n => n.type === 'FILE');
+                          const files = nodes.filter((n) => n.type === 'FILE');
                           for (let i = 0; i < files.length; i++) {
                             setTimeout(async () => {
                               const url = await downloadFile(files[i].id);
@@ -458,7 +526,7 @@ export function FolderView() {
                 {items.map((node) => {
                   const isSelected = selectedIds.has(node.id);
                   const contextNodes = isSelected ? selectedNodesList : [node];
-                  
+
                   return (
                     <NodeContextMenu
                       key={`ctx-${node.id}`}
@@ -473,25 +541,39 @@ export function FolderView() {
                       onDelete={(nodes) => setDeleteNodes(nodes)}
                       onShare={setShareNode}
                       onCut={(nodes) => {
-                        if (folderId) setClipboard(nodes.map(n => n.id), 'cut', folderId);
+                        if (folderId)
+                          setClipboard(
+                            nodes.map((n) => n.id),
+                            'cut',
+                            folderId,
+                          );
                         clear();
                       }}
                       onCopy={(nodes) => {
-                        if (folderId) setClipboard(nodes.map(n => n.id), 'copy', folderId);
+                        if (folderId)
+                          setClipboard(
+                            nodes.map((n) => n.id),
+                            'copy',
+                            folderId,
+                          );
                         clear();
                       }}
                       canPaste={clipboardIds.length > 0 && !!folderId}
                       onPaste={() => {
                         if (!folderId || !sourceParentId || clipboardIds.length === 0) return;
                         if (clipboardMode === 'cut') {
-                          moveNodesMutation.mutate({ ids: clipboardIds, targetId: folderId, sourceParentId });
+                          moveNodesMutation.mutate({
+                            ids: clipboardIds,
+                            targetId: folderId,
+                            sourceParentId,
+                          });
                           clearClipboard();
                         } else if (clipboardMode === 'copy') {
                           copyNodesMutation.mutate({ ids: clipboardIds, targetId: folderId });
                         }
                       }}
                       onDownload={async (nodes) => {
-                        const files = nodes.filter(n => n.type === 'FILE');
+                        const files = nodes.filter((n) => n.type === 'FILE');
                         for (let i = 0; i < files.length; i++) {
                           setTimeout(async () => {
                             const url = await downloadFile(files[i].id);
@@ -552,7 +634,7 @@ export function FolderView() {
           if (!open) {
             setDeleteNodes([]);
             // clear selection if the nodes were deleted and they were selected
-            deleteNodes.forEach(node => {
+            deleteNodes.forEach((node) => {
               if (selectedIds.has(node.id)) {
                 toggle(node.id);
               }

@@ -12,6 +12,7 @@ FR-SHARE-060, FR-SHARE-070, FR-SHARE-080, BR-010, BR-030, BR-070, BR-100.
 ## What Changes
 
 **API** — several endpoints are already scaffolded but incomplete:
+
 - `POST /shares` and `DELETE /shares/:id` exist; the `GET /nodes/:id/shares` endpoint returning
   `NodeShares` (own shares + inherited ancestor) needs to be completed.
 - `GET /shares/resolve` is scaffolded; it currently uses `resolve/:token` path — aligns to `?token`
@@ -21,6 +22,7 @@ FR-SHARE-060, FR-SHARE-070, FR-SHARE-080, BR-010, BR-030, BR-070, BR-100.
   per-controller `@Header`).
 
 **Web** — net-new UI:
+
 - Share dialog (`ShareDialog`): mode tabs, email field for restricted, expiry, existing shares
   list with Copy link / Revoke, and the inherited-ancestor notice.
 - Shared view (`/s/:token` route): the same three-pane layout reused read-only with a
@@ -32,9 +34,11 @@ FR-SHARE-060, FR-SHARE-070, FR-SHARE-080, BR-010, BR-030, BR-070, BR-100.
 ## Capabilities
 
 ### New Capabilities
+
 - `sharing`: create, list, revoke shares; the share dialog; `/s/{token}` shared view; removed-by-owner screen; Shared with me
 
 ### Modified Capabilities
+
 - `auth`: `/shares/resolve` route changes from path param to query param (`?token`) per the spec
 
 ## Impact

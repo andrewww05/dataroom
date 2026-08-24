@@ -28,7 +28,7 @@ describe('Core Flow (e2e)', () => {
       .field('parentId', dataRoom.rootId)
       .attach('file', Buffer.from('%PDF-1.4 content here'), 'doc.pdf')
       .expect(201);
-    
+
     const fileId = uploadRes.body.id;
     expect(uploadRes.body.name).toBe('doc.pdf');
 
@@ -38,7 +38,7 @@ describe('Core Flow (e2e)', () => {
       .set('Authorization', authHeader)
       .send({ parentId: dataRoom.rootId, name: 'Target Folder' })
       .expect(201);
-    
+
     const targetFolderId = folderRes.body.id;
 
     // 4. Move file to folder
@@ -47,14 +47,14 @@ describe('Core Flow (e2e)', () => {
       .set('Authorization', authHeader)
       .send({ ids: [fileId], targetId: targetFolderId })
       .expect(201);
-    
+
     // 5. Share the folder
     const shareRes = await request(app.getHttpServer())
       .post(`/${API_PREFIX}/shares`)
       .set('Authorization', authHeader)
       .send({ nodeId: targetFolderId, mode: 'PUBLIC' })
       .expect(201);
-    
+
     const shareToken = shareRes.body.token;
     const shareId = shareRes.body.id;
 
@@ -62,17 +62,17 @@ describe('Core Flow (e2e)', () => {
     const resolveRes = await request(app.getHttpServer())
       .get(`/${API_PREFIX}/shares/resolve/${shareToken}`)
       .expect(200);
-    
+
     expect(resolveRes.body.mode).toBe('PUBLIC');
 
     const shareAuthHeader = `Share ${shareToken}`;
-    
+
     // Try to list the shared folder contents
     const listRes = await request(app.getHttpServer())
       .get(`/${API_PREFIX}/nodes/${targetFolderId}/children`)
       .set('Authorization', shareAuthHeader)
       .expect(200);
-    
+
     expect(listRes.body.items).toHaveLength(1);
     expect(listRes.body.items[0].id).toBe(fileId);
 
@@ -90,7 +90,7 @@ describe('Core Flow (e2e)', () => {
 
   it('2.3 should handle duplicate file names', async () => {
     const { token, dataRoom } = await createTestUser(app, `duplicate-${Date.now()}@test.com`);
-    
+
     // First upload
     await request(app.getHttpServer())
       .post(`/${API_PREFIX}/files`)
@@ -98,7 +98,7 @@ describe('Core Flow (e2e)', () => {
       .field('parentId', dataRoom.rootId)
       .attach('file', Buffer.from('%PDF-1.4 duplicate'), 'duplicate.pdf')
       .expect(201);
-      
+
     // Second upload with same name
     const res = await request(app.getHttpServer())
       .post(`/${API_PREFIX}/files`)
@@ -106,7 +106,7 @@ describe('Core Flow (e2e)', () => {
       .field('parentId', dataRoom.rootId)
       .attach('file', Buffer.from('%PDF-1.4 duplicate'), 'duplicate.pdf')
       .expect(201);
-      
+
     expect(res.body.name).toMatch(/^duplicate.*\.pdf$/);
     expect(res.body.name).not.toBe('duplicate.pdf');
   });
@@ -122,7 +122,7 @@ describe('Core Flow (e2e)', () => {
       .set('Authorization', authHeader)
       .send({ nodeId: dataRoom.rootId, mode: 'PUBLIC' })
       .expect(201);
-      
+
     const shareToken = shareRes.body.token;
     const shareAuthHeader = `Share ${shareToken}`;
 
@@ -132,7 +132,7 @@ describe('Core Flow (e2e)', () => {
       .set('Authorization', shareAuthHeader)
       .send({ parentId: dataRoom.rootId, name: 'Unauthorized Folder' })
       .expect(403);
-      
+
     // Try to access a node that doesn't exist or isn't claimed
     const fakeId = '00000000-0000-0000-0000-000000000000';
     await request(app.getHttpServer())
@@ -143,7 +143,7 @@ describe('Core Flow (e2e)', () => {
 
   it('2.5 should enforce transactional guarantees and validation', async () => {
     const { token, dataRoom } = await createTestUser(app, `valid-${Date.now()}@test.com`);
-    
+
     // SVG is not allowed
     await request(app.getHttpServer())
       .post(`/${API_PREFIX}/files`)
@@ -151,7 +151,7 @@ describe('Core Flow (e2e)', () => {
       .field('parentId', dataRoom.rootId)
       .attach('file', Buffer.from('<svg></svg>'), 'image.svg')
       .expect(415);
-      
+
     // Oversize file (limit is 100MB in test env usually, but we can't easily send 100MB here without memory issues)
     // We'll skip the exact 413 check here since we can't easily mock `multer` limits dynamically
     // without altering the test app. The 415 test proves validation works before storage.

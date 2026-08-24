@@ -30,6 +30,7 @@ IDs delivered: FR-OPS-010, FR-OPS-020, FR-OPS-030. BR-100 upheld (nothing hardco
 ## Capabilities
 
 ### New Capabilities
+
 - `platform/delivery`: Setup from a clean clone, the README deliverable, and the idempotent demo
   seed.
 

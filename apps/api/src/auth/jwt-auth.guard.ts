@@ -3,7 +3,11 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { firstValueFrom } from 'rxjs';
 
-import { UnauthenticatedException, SignInRequiredException, NotFoundException } from '../http/api.exception';
+import {
+  UnauthenticatedException,
+  SignInRequiredException,
+  NotFoundException,
+} from '../http/api.exception';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SharePrincipal } from './principal';

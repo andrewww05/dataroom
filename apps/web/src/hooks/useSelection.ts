@@ -76,7 +76,7 @@ export const useSelection = create<SelectionState>((set) => ({
       selectedIds: new Set(),
       anchorId: null,
     }),
-    
+
   onFolderChange: () =>
     set({
       selectedIds: new Set(),

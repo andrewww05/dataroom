@@ -18,7 +18,7 @@ export function useCopyNodes() {
     },
     onSuccess: ({ copiedNodes, targetId }) => {
       queryClient.invalidateQueries({ queryKey: ['nodes', targetId, 'children'] });
-      
+
       if (dataRoom?.id) {
         queryClient.invalidateQueries({ queryKey: ['usage', dataRoom.id] });
       }
@@ -26,7 +26,7 @@ export function useCopyNodes() {
       // Invalidate stats for ancestors (we don't know them easily here, but we can invalidate all stats if needed, or targetId specifically)
       queryClient.invalidateQueries({ queryKey: ['nodes'] });
 
-      const nameList = copiedNodes.map(n => n.name).join(', ');
+      const nameList = copiedNodes.map((n) => n.name).join(', ');
       toast.success(`Pasted as ${nameList}`);
     },
     onError: (error) => {

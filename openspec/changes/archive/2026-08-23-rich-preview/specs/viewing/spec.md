@@ -7,14 +7,14 @@
 The viewer SHALL render the following MIME families natively, without installing any third-party
 library, using the browser's own rendering engine (FR-VIEW-060):
 
-| Family | MIME prefix / type | Element |
-|---|---|---|
-| PDF | `application/pdf` | `<iframe>` |
-| Raster image | `image/` (excl. SVG) | `<img>` |
-| SVG | `image/svg+xml` | `<img>` (same as raster; SVG is sandboxed by the object-store; inline is not used, BR-040) |
-| Video | `video/` | `<video controls>` |
-| Audio | `audio/` | `<audio controls>` |
-| Plain text | `text/plain`, `text/csv`, `text/markdown`, `text/x-markdown` | `<pre>` fetched as text and displayed verbatim |
+| Family       | MIME prefix / type                                           | Element                                                                                    |
+| ------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| PDF          | `application/pdf`                                            | `<iframe>`                                                                                 |
+| Raster image | `image/` (excl. SVG)                                         | `<img>`                                                                                    |
+| SVG          | `image/svg+xml`                                              | `<img>` (same as raster; SVG is sandboxed by the object-store; inline is not used, BR-040) |
+| Video        | `video/`                                                     | `<video controls>`                                                                         |
+| Audio        | `audio/`                                                     | `<audio controls>`                                                                         |
+| Plain text   | `text/plain`, `text/csv`, `text/markdown`, `text/x-markdown` | `<pre>` fetched as text and displayed verbatim                                             |
 
 Any other MIME type — specifically Office formats (`.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`),
 proprietary binary formats, and any format not in the table above — SHALL display the honest

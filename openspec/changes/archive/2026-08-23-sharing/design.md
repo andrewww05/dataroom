@@ -18,6 +18,7 @@ surface the user and the link consumer actually see:
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Add `GET /nodes/:id/shares` returning `NodeShares` (FR-SHARE-060).
 - Fix `GET /shares/resolve` to use a `?token` query param (docs/03 API table).
 - Add `Referrer-Policy: no-referrer` header on the resolve endpoint (docs/05 § Risks, BR-100).
@@ -31,6 +32,7 @@ surface the user and the link consumer actually see:
 - Ship `scripts/validate/sharing.sh`.
 
 **Non-Goals:**
+
 - EDITOR role UI (BR-100 — the schema already has the column; the picker ships only when a second
   role exists).
 - Slice 11 (README, demo seed), slice 12 (tests).
@@ -109,6 +111,7 @@ link? Anyone holding it loses access immediately." No stats fetch needed (a shar
 `BR-100` (`Referrer-Policy` header on resolve).
 
 **Cannot prove at runtime (manual checklist):**
+
 - Share dialog renders correctly: mode tabs switch, email field appears for RESTRICTED, expiry
   optional, existing shares list shows, Copy link copies to clipboard, Revoke asks confirm.
 - `/s/:token` shared view: breadcrumbs stop at shared root, no write affordances visible, banner

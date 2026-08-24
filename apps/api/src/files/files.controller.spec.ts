@@ -29,7 +29,7 @@ describe('FilesController', () => {
   it('accepts a valid PDF upload', async () => {
     const principal: Principal = { kind: 'owner', userId: 'owner-id' };
     const pdfBuffer = Buffer.from('%PDF-1.4\n%äüöß\n...');
-    
+
     const file = {
       buffer: pdfBuffer,
       originalname: 'test.pdf',

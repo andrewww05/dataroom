@@ -224,12 +224,18 @@ describe('JwtAuthGuard (integration)', () => {
     });
 
     it('signed-in wrong email on RESTRICTED -> 404 NOT_FOUND', async () => {
-      const response = await get('probe/who', `Share ${restrictedShareToken}, Bearer ${token}`).expect(404);
+      const response = await get(
+        'probe/who',
+        `Share ${restrictedShareToken}, Bearer ${token}`,
+      ).expect(404);
       expect(response.body.code).toBe('NOT_FOUND');
     });
 
     it('signed-in matching email on RESTRICTED -> admitted with SharePrincipal', async () => {
-      const response = await get('probe/who', `Share ${restrictedShareToken}, Bearer ${granteeToken}`).expect(200);
+      const response = await get(
+        'probe/who',
+        `Share ${restrictedShareToken}, Bearer ${granteeToken}`,
+      ).expect(200);
       expect(response.body.kind).toBe('share');
     });
   });

@@ -31,9 +31,7 @@
       "description": "Initial proposal document outlining the change"
     }
   ],
-  "unlocks": [
-    "tasks"
-  ],
+  "unlocks": ["tasks"],
   "root": {
     "path": "/Users/andrewk/Development/projects/dataroom",
     "source": "nearest"

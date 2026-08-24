@@ -1,5 +1,13 @@
 import { useUploads } from '../hooks/useUploads';
-import { X, CheckCircle2, AlertCircle, FileText, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  X,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -22,12 +30,16 @@ export function UploadProgressModal() {
           {uploadingCount > 0 ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Uploading {uploadingCount} item{uploadingCount !== 1 ? 's' : ''}</span>
+              <span>
+                Uploading {uploadingCount} item{uploadingCount !== 1 ? 's' : ''}
+              </span>
             </>
           ) : isComplete ? (
             <>
               <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span>{uploads.length} upload{uploads.length !== 1 ? 's' : ''} complete</span>
+              <span>
+                {uploads.length} upload{uploads.length !== 1 ? 's' : ''} complete
+              </span>
             </>
           ) : (
             'Uploads'
@@ -53,22 +65,34 @@ export function UploadProgressModal() {
       {isModalOpen && (
         <ScrollArea className="flex-1 p-0 border-t bg-background rounded-b-lg">
           <div className="flex flex-col">
-            {uploads.slice().reverse().map((upload) => (
-              <div key={upload.id} className="flex items-center gap-3 px-4 py-3 border-b last:border-0 hover:bg-muted/50">
-                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{upload.file.name}</p>
-                  {upload.status === 'error' && (
-                    <p className="text-xs text-destructive truncate">{upload.error}</p>
-                  )}
+            {uploads
+              .slice()
+              .reverse()
+              .map((upload) => (
+                <div
+                  key={upload.id}
+                  className="flex items-center gap-3 px-4 py-3 border-b last:border-0 hover:bg-muted/50"
+                >
+                  <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{upload.file.name}</p>
+                    {upload.status === 'error' && (
+                      <p className="text-xs text-destructive truncate">{upload.error}</p>
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    {upload.status === 'uploading' && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                    {upload.status === 'success' && (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    )}
+                    {upload.status === 'error' && (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
                 </div>
-                <div className="shrink-0">
-                  {upload.status === 'uploading' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                  {upload.status === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                  {upload.status === 'error' && <AlertCircle className="h-4 w-4 text-destructive" />}
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </ScrollArea>
       )}

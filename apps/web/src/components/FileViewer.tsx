@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   X,
@@ -22,6 +22,7 @@ interface FileViewerProps {
 }
 
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function FileViewer({ file, onClose, onPrev, onNext, shareToken }: FileViewerProps) {
   useEffect(() => {
@@ -45,12 +46,10 @@ export function FileViewer({ file, onClose, onPrev, onNext, shareToken }: FileVi
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent 
-        className="max-w-full w-full h-full p-0 flex flex-col m-0 border-0 rounded-none overflow-hidden bg-background/95 backdrop-blur-sm shadow-none [&>button]:hidden"
-      >
+      <DialogContent className="max-w-full w-full h-full p-0 flex flex-col m-0 border-0 rounded-none overflow-hidden bg-background/95 backdrop-blur-sm shadow-none [&>button]:hidden">
         <DialogTitle className="sr-only">File Viewer</DialogTitle>
         <DialogDescription className="sr-only">Viewing {file.name}</DialogDescription>
-        
+
         <header className="flex h-14 items-center justify-between border-b px-4 shrink-0 bg-background">
           <div className="flex items-center gap-2 truncate">
             <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
@@ -66,7 +65,7 @@ export function FileViewer({ file, onClose, onPrev, onNext, shareToken }: FileVi
             </Button>
           </div>
         </header>
-        
+
         <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-muted/30">
           {onPrev && (
             <Button
@@ -80,7 +79,12 @@ export function FileViewer({ file, onClose, onPrev, onNext, shareToken }: FileVi
             </Button>
           )}
 
-          <ViewerContent file={file} shareToken={shareToken} onDownload={handleDownload} />
+          <ViewerContent
+            key={file.id}
+            file={file}
+            shareToken={shareToken}
+            onDownload={handleDownload}
+          />
 
           {onNext && (
             <Button
@@ -112,7 +116,18 @@ function useTextContent(url: string) {
   });
 }
 
-export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; shareToken?: string; onDownload: () => void }) {
+export function ViewerContent({
+  file,
+  shareToken,
+  onDownload,
+}: {
+  file: FsNode;
+  shareToken?: string;
+  onDownload: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+
   const {
     data: previewUrl,
     isLoading,
@@ -124,11 +139,21 @@ export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; 
     retry: false,
   });
 
+  const mime = file.mimeType || '';
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    if (mime === 'application/pdf' || mime.startsWith('image/')) {
+      const timer = setTimeout(() => setPreviewError(true), 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [previewUrl, mime]);
+
   if (isLoading) {
-    return <div className="text-muted-foreground animate-pulse">Loading preview...</div>;
+    return <Skeleton className="w-full h-full" />;
   }
 
-  if (error) {
+  if (error || previewError) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-8 max-w-md">
         <div className="rounded-full bg-destructive/10 p-4 mb-4">
@@ -139,7 +164,14 @@ export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; 
           There was an error loading this file for preview.
         </p>
         <div className="flex gap-4">
-          <Button variant="outline" onClick={() => refetch()}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setPreviewError(false);
+              setLoaded(false);
+              refetch();
+            }}
+          >
             Try Again
           </Button>
           <Button onClick={onDownload}>Download File</Button>
@@ -150,10 +182,19 @@ export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; 
 
   if (!previewUrl) return null;
 
-  const mime = file.mimeType || '';
-
   if (mime === 'application/pdf') {
-    return <iframe src={previewUrl} className="w-full h-full border-0" title={file.name} />;
+    return (
+      <>
+        {!loaded && <Skeleton key={`skel-${file.id}`} className="absolute inset-0" />}
+        <iframe
+          src={previewUrl}
+          className={`w-full h-full border-0 ${!loaded ? 'opacity-0' : ''}`}
+          title={file.name}
+          onLoad={() => setLoaded(true)}
+          onError={() => setPreviewError(true)}
+        />
+      </>
+    );
   }
 
   // image/* covers raster formats (PNG, JPEG, GIF, WebP) and image/svg+xml.
@@ -162,11 +203,14 @@ export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; 
   // that pre-date that rule. (FR-VIEW-060 task 1.4 — no code change needed here.)
   if (mime.startsWith('image/')) {
     return (
-      <div className="w-full h-full p-8 flex items-center justify-center bg-zinc-950">
+      <div className="w-full h-full p-8 flex items-center justify-center bg-zinc-950 relative">
+        {!loaded && <Skeleton key={`skel-${file.id}`} className="absolute inset-0 z-10" />}
         <img
           src={previewUrl}
           alt={file.name}
-          className="max-w-full max-h-full object-contain drop-shadow-lg"
+          className={`max-w-full max-h-full object-contain drop-shadow-lg ${!loaded ? 'opacity-0' : ''}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setPreviewError(true)}
         />
       </div>
     );
@@ -187,7 +231,7 @@ export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; 
     return (
       <div className="flex flex-col items-center justify-center gap-6 p-8">
         <p className="text-sm font-medium text-foreground truncate max-w-xs">{file.name}</p>
-          <audio controls src={previewUrl} className="w-full max-w-lg" />
+        <audio controls src={previewUrl} className="w-full max-w-lg" />
       </div>
     );
   }
@@ -226,17 +270,11 @@ export function ViewerContent({ file, shareToken, onDownload }: { file: FsNode; 
  * Renders a plain-text file fetched from a presigned URL inside a <pre> block.
  * Delegates to ViewerContent's error UI pattern on fetch failure (BR-050).
  */
-function TextViewer({
-  url,
-  onDownload,
-}: {
-  url: string;
-  onDownload: () => void;
-}) {
+function TextViewer({ url, onDownload }: { url: string; onDownload: () => void }) {
   const { data: text, isLoading, error, refetch } = useTextContent(url);
 
   if (isLoading) {
-    return <div className="text-muted-foreground animate-pulse">Loading preview...</div>;
+    return <Skeleton className="w-full h-full" />;
   }
 
   if (error) {

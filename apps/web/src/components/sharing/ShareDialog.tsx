@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,12 +62,7 @@ function ShareLink({ share, onRevoke }: { share: Share; onRevoke: (share: Share)
             Confirm
           </Button>
         ) : (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setConfirmRevoke(true)}
-            title="Revoke"
-          >
+          <Button size="sm" variant="ghost" onClick={() => setConfirmRevoke(true)} title="Revoke">
             <Trash2 className="h-3.5 w-3.5 text-destructive" />
           </Button>
         )}

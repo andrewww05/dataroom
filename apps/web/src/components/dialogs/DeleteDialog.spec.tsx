@@ -39,17 +39,11 @@ describe('DeleteDialog', () => {
       isError: false,
     });
 
-    render(
-      <DeleteDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        nodes={[mockNode]}
-      />,
-    );
+    render(<DeleteDialog open={true} onOpenChange={vi.fn()} nodes={[mockNode]} />);
 
     // The user must confirm the deletion
     fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    
+
     expect(mutateAsync).toHaveBeenCalled();
   });
 });

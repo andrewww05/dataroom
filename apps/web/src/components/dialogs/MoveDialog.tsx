@@ -23,10 +23,10 @@ export function MoveDialog({ open, onOpenChange, nodesToMove }: MoveDialogProps)
 
   const handleMove = () => {
     if (!selectedTarget || nodesToMove.length === 0) return;
-    
+
     // All nodes to move are in the same folder in this app
     const sourceParentId = nodesToMove[0].parentId!;
-    const ids = nodesToMove.map(n => n.id);
+    const ids = nodesToMove.map((n) => n.id);
 
     moveNodes.mutate(
       { ids, targetId: selectedTarget.id, sourceParentId },
@@ -35,7 +35,7 @@ export function MoveDialog({ open, onOpenChange, nodesToMove }: MoveDialogProps)
           onOpenChange(false);
           setSelectedTarget(null);
         },
-      }
+      },
     );
   };
 
@@ -48,18 +48,18 @@ export function MoveDialog({ open, onOpenChange, nodesToMove }: MoveDialogProps)
 
   if (nodesToMove.length === 0) return null;
   const currentParentId = nodesToMove[0].parentId;
-  const movingNodeIds = nodesToMove.map(n => n.id);
+  const movingNodeIds = nodesToMove.map((n) => n.id);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Move {nodesToMove.length} item{nodesToMove.length === 1 ? '' : 's'}</DialogTitle>
+          <DialogTitle>
+            Move {nodesToMove.length} item{nodesToMove.length === 1 ? '' : 's'}
+          </DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          <p className="text-sm text-muted-foreground mb-4">
-            Select a destination folder.
-          </p>
+          <p className="text-sm text-muted-foreground mb-4">Select a destination folder.</p>
           <FolderPicker
             movingNodeIds={movingNodeIds}
             currentParentId={currentParentId}
@@ -76,10 +76,7 @@ export function MoveDialog({ open, onOpenChange, nodesToMove }: MoveDialogProps)
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleMove}
-            disabled={!selectedTarget || moveNodes.isPending}
-          >
+          <Button onClick={handleMove} disabled={!selectedTarget || moveNodes.isPending}>
             {moveNodes.isPending ? 'Moving...' : 'Move'}
           </Button>
         </DialogFooter>

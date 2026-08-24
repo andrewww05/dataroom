@@ -82,23 +82,17 @@ describe('MoveDialog', () => {
       isError: false,
     });
 
-    render(
-      <MoveDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        nodesToMove={[mockFileNode]}
-      />,
-    );
+    render(<MoveDialog open={true} onOpenChange={vi.fn()} nodesToMove={[mockFileNode]} />);
 
     // Select the target folder
     fireEvent.click(screen.getByText('Target Folder'));
-    
+
     // Click move button
     fireEvent.click(screen.getByRole('button', { name: /move/i }));
 
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ targetId: 'target-folder' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 
@@ -112,23 +106,17 @@ describe('MoveDialog', () => {
       isError: false,
     });
 
-    render(
-      <MoveDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        nodesToMove={[mockFolderNode]}
-      />,
-    );
+    render(<MoveDialog open={true} onOpenChange={vi.fn()} nodesToMove={[mockFolderNode]} />);
 
     // Select the target folder
     fireEvent.click(screen.getByText('Target Folder'));
-    
+
     // Click move button
     fireEvent.click(screen.getByRole('button', { name: /move/i }));
 
     expect(mutate).toHaveBeenCalledWith(
       expect.objectContaining({ targetId: 'target-folder' }),
-      expect.anything()
+      expect.anything(),
     );
   });
 });

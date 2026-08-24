@@ -80,7 +80,7 @@ describe('DataRooms usage (FR-ACCT-010)', () => {
       files: 3,
       bytes: expectedBytes,
     });
-    
+
     expect(typeof response.body.files).toBe('number');
     expect(typeof response.body.bytes).toBe('number');
   });
@@ -94,14 +94,14 @@ describe('DataRooms usage (FR-ACCT-010)', () => {
 
   it('returns 404 for a share token (BR-010)', async () => {
     const f1 = await folder(rootId, 'share-folder');
-    
+
     // Create share token
     const shareRes = await request(app.getHttpServer())
       .post(`/${API_PREFIX}/shares`)
       .send({ nodeId: f1, mode: 'PUBLIC' })
       .set('Authorization', `Bearer ${token}`)
       .expect(201);
-      
+
     const shareToken = shareRes.body.token;
 
     await request(app.getHttpServer())

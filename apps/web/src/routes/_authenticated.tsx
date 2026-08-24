@@ -22,6 +22,7 @@ import { useMove } from '@/hooks/useMove';
 import { SearchBox } from '@/components/SearchBox';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { StorageFooter } from '@/components/StorageFooter';
+import { AppShellSkeleton } from '@/components/skeletons';
 
 function BreadcrumbsNav({ dataRoomName }: { dataRoomName: string }) {
   const { folderId } = useParams({ strict: false }) as { folderId?: string };
@@ -85,7 +86,7 @@ function AuthenticatedLayout() {
   // `beforeLoad` has already resolved the session and redirected anyone without one, so this
   // narrows the type rather than guarding a state the user can actually observe.
   if (!user) {
-    return null;
+    return <AppShellSkeleton />;
   }
 
   return (
@@ -154,11 +155,7 @@ function AuthenticatedLayout() {
           </div>
           <div className="ml-2 flex items-center space-x-2">
             {dataRoom?.rootId && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShareRoomOpen(true)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setShareRoomOpen(true)}>
                 <Share2 className="h-4 w-4 mr-2" />
                 Share
               </Button>
